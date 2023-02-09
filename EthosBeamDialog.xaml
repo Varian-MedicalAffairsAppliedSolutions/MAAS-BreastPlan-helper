@@ -4,7 +4,7 @@
         xmlns:nlog ="clr-namespace:NlogViewer;assembly=NlogViewer"
         xmlns:local="clr-namespace:GridBlockCreator" 
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        Height="620" Width="600">
+        Height="600" Width="580">
 
 
     <StackPanel Orientation="Vertical" Margin="0,0,0,0" IsEnabled="True">
@@ -27,9 +27,12 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal"/>
 
-        <Grid Margin="10">
-            <DataGrid Width ="500" Margin="10" Name="dgSimple" ItemsSource="{Binding Beams}"></DataGrid>
-        </Grid>
+        <StackPanel Orientation="Horizontal" >
+            <Grid Margin="10">
+                <DataGrid Width ="300" Name="dgSimple" ItemsSource="{Binding Beams}"></DataGrid>
+            </Grid>
+            <TextBlock Margin="10" Text="{Binding Output}"></TextBlock>
+        </StackPanel>
 
         <StackPanel Orientation="Horizontal" >
             <Button Height="26" Width="150" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Create Listed Fields" Click="CreateBeams"/>
@@ -37,8 +40,5 @@
             <Button Height="26" Width="150" Margin="20,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Close" IsCancel="True"/>
         </StackPanel>
 
-        <StackPanel>
-            <TextBlock Margin="10" Text="{Binding Output}"></TextBlock>
-        </StackPanel>
     </StackPanel>
 </UserControl>
