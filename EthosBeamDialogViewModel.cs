@@ -1,0 +1,281 @@
+﻿using NLog;
+using NLog.Config;
+using NLog.Extensions.Logging;
+using Prism.Modularity;
+using Prism.Mvvm;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows;
+using System.Windows.Shapes;
+using VMS.TPS.Common.Model.API;
+using VMS.TPS.Common.Model.Types;
+
+
+namespace GridBlockCreator
+{  
+    public class OffsetBeam
+    {
+        public string BeamID { get; set; }
+        public double AngularOffset { get; set; }
+        public double GantryAngle { get; set; }
+
+    }
+    public class BeamParameters
+    {
+        public ExternalBeamMachineParameters machineParameters;
+        public double collimatorAngle;
+        public double supportAngle;
+        public VVector isocenter;
+        public VRect<double> jaws;
+        public string machine;
+        public string scale;
+    }
+
+    public class EthosBeamDialogViewModel : BindableBase
+    {
+        private string output;
+        private bool modifying;
+        private ScriptContext context;
+        public BeamParameters beamParams;
+
+        public string Output
+        {
+            get { return output; }
+            set { SetProperty(ref output, value); }
+        }
+
+        private string machineScale;
+        public string MachineScale
+        {
+            get { return machineScale; }
+            set { SetProperty(ref machineScale, value); }
+        }
+
+
+        private List<string> lateralityOptions;
+        public List<string> LateralityOptions
+        {
+            get { return lateralityOptions; }
+            set { SetProperty(ref lateralityOptions, value); }
+        }
+
+
+        private List<OffsetBeam> beams;
+        public List<OffsetBeam> Beams
+        {
+            get { return beams; }
+            set { SetProperty(ref beams, value); }
+        }
+
+        private List<Beam> fields;
+        public List<Beam> Fields
+        {
+            get { return fields; }
+            set { SetProperty(ref fields, value); }
+        }
+
+        private int fieldSelected;
+        public int FieldSelected
+        {
+            get { return fieldSelected; }
+            set { SetProperty(ref fieldSelected, value); }
+        }
+
+
+        private int sideSelected;
+        public int SideSelected
+        {
+            get { return sideSelected; }
+            set { SetProperty(ref sideSelected, value); }
+        }
+
+        public void updateBeamParameters()
+        {
+            beamParams.machineParameters = new ExternalBeamMachineParameters(fields[fieldSelected].TreatmentUnit.Id, fields[0].EnergyModeDisplayName, fields[0].DoseRate, "STATIC", string.Empty);
+            beamParams.collimatorAngle = fields[fieldSelected].ControlPoints.First().CollimatorAngle;
+            beamParams.supportAngle = fields[fieldSelected].ControlPoints.First().PatientSupportAngle;
+            beamParams.isocenter = fields[fieldSelected].IsocenterPosition;
+            beamParams.jaws = fields[fieldSelected].ControlPoints.First().JawPositions;
+            beamParams.machine = fields[fieldSelected].TreatmentUnit.Id;
+            beamParams.scale = fields[fieldSelected].TreatmentUnit.MachineScaleDisplayName;
+        }
+
+        public EthosBeamDialogViewModel(ScriptContext ctx)
+        {
+            // ctor
+            context = ctx;
+            modifying = false;
+
+            lateralityOptions = new List<string> { "Left", "Right" };
+            Output = "Welcome to the BreastPlan-Helper";
+
+            // Display additional information. Use the active plan if available.
+            PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
+            if (plan.PlanType != PlanType.ExternalBeam)
+            {
+                MessageBox.Show("Please open an external beam plan.");
+                return;
+            }
+            ExternalPlanSetup ext_plan = (ExternalPlanSetup)plan;
+
+            fields = new List<Beam>();
+            foreach (var bm in ext_plan.Beams)
+            {
+                fields.Add(bm);
+            }
+
+            fieldSelected = 0;
+            double initial_angle = fields[0].ControlPoints.First().GantryAngle;
+            machineScale = fields[0].TreatmentUnit.MachineScaleDisplayName;
+            sideSelected = 0;
+            if ((initial_angle < 180 & machineScale == "Varian IEC") || (initial_angle > 180 & machineScale == "Varian Standard"))
+            {
+                sideSelected = 1;
+            }
+
+            beamParams = new BeamParameters();
+            updateBeamParameters();
+
+            beams = new List<OffsetBeam>
+            {
+                new OffsetBeam() { BeamID = "Med 2", AngularOffset = -8, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Med 3", AngularOffset = -16, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Med 4", AngularOffset = 8, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Med 5", AngularOffset = 16, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Med 6", AngularOffset = 32, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Med 7", AngularOffset = 48, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 1", AngularOffset = 144, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 2", AngularOffset = 160, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 3", AngularOffset = 176, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 4", AngularOffset = 184, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 5", AngularOffset = 192, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 6", AngularOffset = 200, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 7", AngularOffset = 208, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "Lat 8", AngularOffset = 216, GantryAngle = 0 },
+                new OffsetBeam() { BeamID = "PAB", AngularOffset = 240, GantryAngle = 0 }
+            };
+
+            RecalculateBeams();
+        }
+
+        public void RecalculateBeams()
+        {
+            double initial_angle = fields[fieldSelected].ControlPoints.First().GantryAngle;
+            foreach (var bm in beams)
+            {
+                double ga = 0;
+                if (sideSelected == 0)
+                {
+                    ga = (initial_angle + bm.AngularOffset) % 360;
+                }
+                else
+                {
+                    ga = (initial_angle - bm.AngularOffset) % 360;
+                }
+
+                if (ga < 0)
+                {
+                    ga += 360;
+                }
+
+                bm.GantryAngle = ga;
+            }
+
+            Output += "\nRecalculated gantry angles";
+        }
+
+        public void FindBeamAngles()
+        {
+            PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
+            ExternalPlanSetup ext_plan = (ExternalPlanSetup)plan;
+
+            foreach (var bm in beams)
+            {
+                bool make_field = true;
+                foreach (var ext in ext_plan.Beams)
+                    if (bm.BeamID.Equals(ext.Id, StringComparison.OrdinalIgnoreCase))
+                    {
+                        make_field = false;
+                        string message = string.Format("\nUnable to add field {0}, label matches an existing field ID.\nField IDs must be unique.", bm.BeamID);
+                        Output += message;
+                        //MessageBox.Show(message);
+                    }
+
+                if (make_field)
+                {
+                    ext_plan.AddStaticBeam(beamParams.machineParameters, beamParams.jaws, beamParams.collimatorAngle, bm.GantryAngle, beamParams.supportAngle, beamParams.isocenter);
+                    ext_plan.Beams.Last().Id = bm.BeamID;
+                }
+            }
+
+            fields.Clear();
+            foreach (var bm in ext_plan.Beams)
+            {
+                fields.Add(bm);
+            }
+
+            // And the main structure with target
+            Output += "\nCreated Fields";
+            // MessageBox.Show("Created Beams");
+        }
+
+        public void DeleteExcessAngles()
+        {
+            PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
+            ExternalPlanSetup ext_plan = (ExternalPlanSetup)plan;
+
+            var selid = fields[fieldSelected].Id;
+
+            List<Beam> to_remove = new List<Beam>();
+
+            foreach (var bm in ext_plan.Beams)
+            {
+                if (bm.Id != selid)
+                {
+                    to_remove.Add(bm);
+                }
+            }
+
+            foreach (var bm in to_remove)
+            {
+                 ext_plan.RemoveBeam(bm);
+            }
+
+            fields.Clear();
+            foreach (var bm in ext_plan.Beams)
+            {
+                fields.Add(bm);
+            }
+            fieldSelected = 0;
+            updateBeamParameters();
+
+            Output += "\nRemoved Fields";
+        }
+        
+        public void CreateBeams()
+        {
+            if (!modifying)
+            {
+                context.Patient.BeginModifications();
+                modifying = true;
+            }
+            FindBeamAngles();
+        }
+
+        public void DeleteBeams()
+        {
+            if (!modifying)
+            {
+                context.Patient.BeginModifications();
+                modifying = true;
+            }
+            DeleteExcessAngles();
+        }
+    }
+}
