@@ -19,7 +19,7 @@
         <StackPanel Orientation="Horizontal" >
             <Label Height="26" Width="100" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Seed Field:" />
             <ComboBox x:Name="SeedField" ItemsSource="{Binding Fields}" DisplayMemberPath="Id" SelectedIndex="{Binding FieldSelected}" HorizontalAlignment="Left" Height="26" Margin="0, 10, 10, 10" VerticalAlignment="Top" Width="123"/>
-            <Button Height="26" Width="220" Margin="50,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Update Gantry Angles" Click="RecalculateBeams"/>
+            <Button Height="26" Width="200" Margin="50,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Update Gantry Angles" Click="RecalculateBeams"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal"/>
 
@@ -27,17 +27,18 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal"/>
 
-        <StackPanel Orientation="Horizontal">
-            <Grid Margin="10">
-                <DataGrid Margin="10" Name="dgSimple" ItemsSource="{Binding Beams}"></DataGrid>
-            </Grid>
+        <Grid Margin="10">
+            <DataGrid Width ="500" Margin="10" Name="dgSimple" ItemsSource="{Binding Beams}"></DataGrid>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" >
+            <Button Height="26" Width="150" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Create Listed Fields" Click="CreateBeams"/>
+            <Button Height="26" Width="150" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Remove Non Seed Fields" Click="DeleteBeams"/>
+            <Button Height="26" Width="150" Margin="20,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Close" IsCancel="True"/>
+        </StackPanel>
+
+        <StackPanel>
             <TextBlock Margin="10" Text="{Binding Output}"></TextBlock>
-        </StackPanel>
-
-        <StackPanel Orientation="Horizontal" >
-            <Button Height="26" Width="180" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Create Listed Fields" Click="CreateBeams"/>
-            <Button Height="26" Width="180" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Remove Non Seed Fields" Click="DeleteBeams"/>
-            <Button Height="26" Width="130" Margin="20,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Close" IsCancel="True"/>
         </StackPanel>
     </StackPanel>
 </UserControl>

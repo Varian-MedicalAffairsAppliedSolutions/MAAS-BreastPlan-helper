@@ -187,7 +187,7 @@ namespace GridBlockCreator
                 bm.GantryAngle = ga;
             }
 
-            Output += "\nRecalculated gantry angles";
+            Output += "\nCalculated gantry angles";
         }
 
         public void FindBeamAngles()
