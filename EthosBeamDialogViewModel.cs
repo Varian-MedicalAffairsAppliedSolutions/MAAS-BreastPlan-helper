@@ -97,7 +97,20 @@ namespace GridBlockCreator
 
         public void updateBeamParameters()
         {
-            beamParams.machineParameters = new ExternalBeamMachineParameters(fields[fieldSelected].TreatmentUnit.Id, fields[0].EnergyModeDisplayName, fields[0].DoseRate, "STATIC", string.Empty);
+            int doserate = fields[fieldSelected].DoseRate;
+            string fluencemodeid = string.Empty;
+            string energymodeid = fields[fieldSelected].EnergyModeDisplayName;
+            if (energymodeid.Contains("-"))
+            {
+                string[] splits = energymodeid.Split('-');
+                energymodeid = splits[0];
+                fluencemodeid = splits[1];
+            }
+            if (fields[fieldSelected].TreatmentUnit.Id.Contains("ETHOS"))
+            {
+                doserate = 800;
+            }
+            beamParams.machineParameters = new ExternalBeamMachineParameters(fields[fieldSelected].TreatmentUnit.Id, energymodeid, doserate, "STATIC", fluencemodeid);
             beamParams.collimatorAngle = fields[fieldSelected].ControlPoints.First().CollimatorAngle;
             beamParams.supportAngle = fields[fieldSelected].ControlPoints.First().PatientSupportAngle;
             beamParams.isocenter = fields[fieldSelected].IsocenterPosition;
