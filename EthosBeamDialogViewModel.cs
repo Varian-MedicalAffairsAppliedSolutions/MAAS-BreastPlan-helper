@@ -117,17 +117,19 @@ namespace GridBlockCreator
 
             // Display additional information. Use the active plan if available.
             PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
-            if (plan.PlanType != PlanType.ExternalBeam)
-            {
-                MessageBox.Show("Please open an external beam plan.");
-                return;
-            }
             ExternalPlanSetup ext_plan = (ExternalPlanSetup)plan;
 
             fields = new List<Beam>();
             foreach (var bm in ext_plan.Beams)
             {
-                fields.Add(bm);
+                if (bm.IsSetupField.Equals(true))
+                {
+                    continue;
+                }
+                else
+                {
+                    fields.Add(bm);
+                }
             }
 
             fieldSelected = 0;
@@ -187,7 +189,7 @@ namespace GridBlockCreator
                 bm.GantryAngle = ga;
             }
 
-            Output += "\nCalculated gantry angles";
+            Output += "\n -- Calculated Gantry Angles";
         }
 
         public void FindBeamAngles()
@@ -221,7 +223,7 @@ namespace GridBlockCreator
             }
 
             // And the main structure with target
-            Output += "\nCreated Fields";
+            Output += "\n - Created Fields";
             // MessageBox.Show("Created Beams");
         }
 
@@ -255,7 +257,7 @@ namespace GridBlockCreator
             fieldSelected = 0;
             updateBeamParameters();
 
-            Output += "\nRemoved Fields";
+            Output += "\n - Removed Fields";
         }
         
         public void CreateBeams()

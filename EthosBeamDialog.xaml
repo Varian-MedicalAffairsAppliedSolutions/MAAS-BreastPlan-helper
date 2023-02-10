@@ -37,7 +37,7 @@
         <StackPanel Orientation="Horizontal" >
             <Button Height="26" Width="150" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Create Listed Fields" Click="CreateBeams"/>
             <Button Height="26" Width="150" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Remove Non Seed Fields" Click="DeleteBeams"/>
-            <Button Height="26" Width="150" Margin="20,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Close" IsCancel="True"/>
+            <Button Height="26" Width="150" Margin="10,10,10,10" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Close" IsCancel="True"/>
         </StackPanel>
 
     </StackPanel>

@@ -23,7 +23,7 @@ namespace VMS.TPS
 {
   public class Script
   {
-    private bool isDebug = true;
+    private bool isDebug = false;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void Execute(ScriptContext context)
@@ -35,8 +35,35 @@ namespace VMS.TPS
             return;
         }
 
+        PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
+        if (plan.PlanType != PlanType.ExternalBeam)
+        {
+            MessageBox.Show("Please open an external beam plan.");
+            return;
+        }
+
+        ExternalPlanSetup ext_plan = (ExternalPlanSetup)plan;
+
+        int tx_beams = 0;
+        foreach (var bm in ext_plan.Beams)
+        {
+            if (bm.IsSetupField.Equals(true))
+            {
+                continue;
+            }
+            else
+            {
+                tx_beams += 1;
+            }
+        }
+        if (tx_beams < 1)
+        {
+            MessageBox.Show("There must be at least 1 treatment field in the plan.\nSetup fields are ignored.");
+            return;
+        }
+
         //var showBanner = System.Configuration.ConfigurationManager.AppSettings["DisplayTerms"].ToLower() == "true";
-          //  MessageBox.Show($"IsDebug Flag: {System.Configuration.ConfigurationManager.AppSettings["DisplayTerms"].ToLower()}");
+        //  MessageBox.Show($"IsDebug Flag: {System.Configuration.ConfigurationManager.AppSettings["DisplayTerms"].ToLower()}");
         var mainWindow = new GridBlockCreator.MainWindow(context, isDebug);
         
         mainWindow.ShowDialog();
