@@ -24,6 +24,7 @@ namespace GridBlockCreator
         public string BeamID { get; set; }
         public double AngularOffset { get; set; }
         public double GantryAngle { get; set; }
+        public double CollimatorAngle { get; set; }
 
     }
     public class BeamParameters
@@ -159,21 +160,21 @@ namespace GridBlockCreator
 
             beams = new List<OffsetBeam>
             {
-                new OffsetBeam() { BeamID = "Med 2", AngularOffset = -8, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Med 3", AngularOffset = -16, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Med 4", AngularOffset = 8, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Med 5", AngularOffset = 16, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Med 6", AngularOffset = 32, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Med 7", AngularOffset = 48, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 1", AngularOffset = 144, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 2", AngularOffset = 160, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 3", AngularOffset = 176, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 4", AngularOffset = 184, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 5", AngularOffset = 192, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 6", AngularOffset = 200, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 7", AngularOffset = 208, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "Lat 8", AngularOffset = 216, GantryAngle = 0 },
-                new OffsetBeam() { BeamID = "PAB", AngularOffset = 240, GantryAngle = 0 }
+                new OffsetBeam() { BeamID = "Med 2", AngularOffset = -8, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Med 3", AngularOffset = -16, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Med 4", AngularOffset = 8, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Med 5", AngularOffset = 16, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Med 6", AngularOffset = 32, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Med 7", AngularOffset = 48, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 1", AngularOffset = 144, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 2", AngularOffset = 160, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 3", AngularOffset = 176, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 4", AngularOffset = 184, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 5", AngularOffset = 192, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 6", AngularOffset = 200, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 7", AngularOffset = 208, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "Lat 8", AngularOffset = 216, GantryAngle = 0, CollimatorAngle = 5 },
+                new OffsetBeam() { BeamID = "PAB", AngularOffset = 240, GantryAngle = 0, CollimatorAngle = 5 }
             };
 
             RecalculateBeams();
@@ -224,7 +225,7 @@ namespace GridBlockCreator
 
                 if (make_field)
                 {
-                    ext_plan.AddStaticBeam(beamParams.machineParameters, beamParams.jaws, beamParams.collimatorAngle, bm.GantryAngle, beamParams.supportAngle, beamParams.isocenter);
+                    ext_plan.AddStaticBeam(beamParams.machineParameters, beamParams.jaws, bm.CollimatorAngle, bm.GantryAngle, beamParams.supportAngle, beamParams.isocenter);
                     ext_plan.Beams.Last().Id = bm.BeamID;
                 }
             }
