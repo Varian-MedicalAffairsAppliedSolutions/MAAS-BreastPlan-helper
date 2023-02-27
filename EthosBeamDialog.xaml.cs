@@ -46,9 +46,20 @@ namespace GridBlockCreator
         }
 
 
-        private void RecalculateBeams(object sender, RoutedEventArgs e)
+        private void RecalculateBeamAngles(object sender, RoutedEventArgs e)
         {
             vm.RecalculateBeams();
+            dgSimple.Items.Refresh();
+        }
+
+        private void RecalculateCollimatorAngles(object sender, RoutedEventArgs e)
+        {
+            vm.RecalculateColls();
+            dgSimple.Items.Refresh();
+        }
+        private void RecalculateMLC(object sender, RoutedEventArgs e)
+        {
+            vm.RecalculateMLCs();
             dgSimple.Items.Refresh();
         }
 
