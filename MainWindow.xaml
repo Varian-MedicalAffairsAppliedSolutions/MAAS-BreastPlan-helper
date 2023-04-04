@@ -17,8 +17,11 @@
                 <!--TabItem Name="RapidRodsTab" Header="RapidRods"/-->
             </TabControl>
 
-            <TextBlock Grid.Row="1" Name="Footer" Background="PaleVioletRed" Text="{Binding Footer, Mode=TwoWay}">            
-                
+            <TextBlock Grid.Row="1" Name="Footer" Background="PaleVioletRed">            
+                <Label Margin="0">
+                    <Hyperlink Command="{Binding HyperlinkCmd}">Bound by the terms of the Varian LUSLA</Hyperlink>
+                </Label>
+                <Label Margin="0" Content="{Binding PostText}"/>
             </TextBlock>
         </Grid>
 

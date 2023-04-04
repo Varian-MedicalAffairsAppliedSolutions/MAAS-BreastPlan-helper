@@ -1,4 +1,6 @@
-﻿using NLog.Layouts;
+﻿using MAAS_BreastPlan_helper.GridBlockCreator;
+using NLog.Layouts;
+using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
@@ -16,34 +18,43 @@ namespace GridBlockCreator
 
 	public class MainViewModel: BindableBase
     {
-        private string footer;
 
-        public string Footer
+        public DelegateCommand HyperlinkCmd { get; private set; }
+
+        private string postText;
+        public string PostText
         {
-            get { return footer; }
-            set { SetProperty(ref footer, value); }
+            get { return postText; }
+            set { SetProperty(ref postText, value); }
         }
 
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        private void OnHyperlink()
         {
+            var url = "http://medicalaffairs.varian.com/download/VarianLUSLA.pdf";
             System.Diagnostics.Process.Start(
-                new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri)
-             );
-            e.Handled = true;
+                new System.Diagnostics.ProcessStartInfo(url)
+                );
+        }
+
+        private bool CanHyperlink()
+        {
+            return true;
         }
 
 
-        public MainViewModel(bool isDebug)
+        public MainViewModel(SettingsClass settings)
         {
             //MessageBox.Show($"Is Debug == {isDebug}");
-            Footer = "Bound by the terms of the Varian LUSLA";
             //var hlink = new Hyperlink() { NavigateUri = new Uri("http://medicalaffairs.varian.com/download/VarianLUSLA.pdf") };
             //Footer += hlink;
-            if (isDebug)
+            PostText = "";
+            if (!settings.Validated)
             {
-                Footer += " *** Not Validated for clinical use ***";
+                PostText = " *** Not Validated for clinical use ***";
             }
-            
+
+            HyperlinkCmd = new DelegateCommand(OnHyperlink, CanHyperlink);
+
         }
 
     }

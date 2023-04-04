@@ -20,13 +20,10 @@ namespace GridBlockCreator
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow(ScriptContext context, bool showTerms)
+        public MainWindow(ScriptContext context)
         {
             InitializeComponent();
             EthosAutoBeamTab.Content = new EthosBeamDialog(context);
-            // RapidRodsTab.Content = new GridDialog(context);
-            var vm = new MainViewModel(showTerms);
-            DataContext = vm;
         }
     }
 }
