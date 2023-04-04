@@ -56,7 +56,7 @@ jobs:
         -StorePasswordInClearText
 
     - name: Download nuget package
-      run: nuget install ESAPI -Version 15.6.0 -OutputDirectory packages
+      run: nuget install ESAPI -Version 15.6.0 -OutputDirectory ${{env.GITHUB_WORKSPACE_PACKAGES_PATH}}
 
     - name: Update hint paths in the csproj file
       run: |
