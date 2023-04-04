@@ -72,7 +72,6 @@ jobs:
     - name: Update hint paths in the csproj file
       run: |
         .\.github\workflows\Update-EsapiHintPaths.ps1 `
-        -CsprojFilePath GITHUB_WORKSPACE `
         -CsprojFileName ${{env.PROJECT_NAME}}.csproj
         
     - name: Build Solution
