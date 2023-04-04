@@ -40,7 +40,7 @@ jobs:
     - name: Update Target Framework Version to 4.6.1
       uses: Nambers/ReplaceStringInFile@v1.1
       with:
-        path: MAAS-BreastPlan-helper.csproj
+        path: .\${{env.PROJECT_NAME}}.csproj
         oldString: "TargetFrameworkVersion>v[\\d\\.]+<"
         newString: 'TargetFrameworkVersion>v4.6.1<'
 
@@ -54,9 +54,9 @@ jobs:
           -MinorVersion ${{ env.MINOR_VERSION }} `
           -PatchVersion ${{ env.PATCH_VERSION }} `
           -BuildNumber ${{ env.BUILD_NUMBER }}
-
+          
     - name: Download nuget packages
-      run: nuget install .\packages.config -OutputDirectory packages
+      run: nuget install packages.config -OutputDirectory packages
 
     - name: Add VIC GitHub NuGet repository
       run: nuget source add
@@ -69,19 +69,19 @@ jobs:
     - name: Download ESAPI package
       run: nuget install ESAPI -Version 16.1.0 -OutputDirectory packages
 
-
     - name: Update hint paths in the csproj file
       run: |
         .\.github\workflows\Update-EsapiHintPaths.ps1 `
-        -CsprojFileName MAAS-BreastPlan-helper.csproj
-
+        -CsprojFilePath ${{GITHUB_WORKSPACE}} `
+        -CsprojFileName ${{env.PROJECT_NAME}}.csproj
+        
     - name: Build Solution
-      run: msbuild.exe MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
+      run: msbuild.exe ${{env.PROJECT_NAME}}.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
 
     - name: Zip
       run: |
         Compress-Archive `
-          -Path ".\MAAS-BreastPlan-helper\bin\Debug\*" `
+          -Path "bin\Debug\*" `
           -DestinationPath "${{ github.workspace }}/${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_FILE_NAME }}-EclipseV161.zip"
     
     - name: Create Release
