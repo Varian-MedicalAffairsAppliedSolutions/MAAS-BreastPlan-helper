@@ -40,7 +40,7 @@ jobs:
     - name: Update Target Framework Version to 4.6.1
       uses: Nambers/ReplaceStringInFile@v1.1
       with:
-        path: .\MAAS-BreastPlan-helper.csproj
+        path: MAAS-BreastPlan-helper.csproj
         oldString: "TargetFrameworkVersion>v[\\d\\.]+<"
         newString: 'TargetFrameworkVersion>v4.6.1<'
 
