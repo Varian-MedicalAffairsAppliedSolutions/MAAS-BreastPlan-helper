@@ -55,10 +55,10 @@ jobs:
         nuget-version: latest
         
     - name: Call nuget restore
-      run: nuget restore .\packages.config
+      run: nuget restore .\packages.config -PackagesDirectory packages
     
-    - name: Update nuget packages
-      run: nuget update .\packages.config
+    #- name: Update nuget packages
+    #  run: nuget update .\packages.config
     
     - name: Download nuget packages
       run: nuget install .\packages.config -OutputDirectory packages
