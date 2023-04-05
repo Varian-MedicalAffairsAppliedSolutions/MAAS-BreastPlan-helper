@@ -53,19 +53,12 @@ jobs:
       uses: NuGet/setup-nuget@v1
       with:
         nuget-version: latest
-        
-    #- name: Call nuget restore
-    #  run: nuget restore .\packages.config -PackagesDirectory packages
-    
-    #- name: Update nuget packages
-    #  run: nuget update .\packages.config
     
     - name: Download nuget packages
       run: nuget install .\packages.config -OutputDirectory packages
-    
-    - name: update prism
-      run: nuget install Prism -Version 8.1.97.5141
-
+   
+    - name: Update everything
+      run: nuget update -Id * -FrameworkVersion v4.6.1
 
     - name: Add VIC GitHub NuGet repository
       run: nuget source add
