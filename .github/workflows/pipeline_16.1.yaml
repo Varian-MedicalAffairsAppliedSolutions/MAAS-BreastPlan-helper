@@ -55,7 +55,7 @@ jobs:
         nuget-version: latest
         
     - name: Call nuget restore
-      run: nuget restore .\MAAS-BreastPlan-helper.csproj
+      run: nuget restore .\packages.config
     
     - name: Update nuget packages
       run: nuget update .\packages.config
