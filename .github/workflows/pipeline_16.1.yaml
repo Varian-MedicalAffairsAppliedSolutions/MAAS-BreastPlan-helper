@@ -55,7 +55,7 @@ jobs:
         nuget-version: latest
         
     - name: Update nuget packages
-      run: nuget update
+      run: nuget update .\packages.config
     
     - name: Download nuget packages
       run: nuget install .\packages.config -OutputDirectory packages
