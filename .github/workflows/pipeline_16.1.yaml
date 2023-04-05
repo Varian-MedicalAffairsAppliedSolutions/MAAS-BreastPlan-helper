@@ -53,6 +53,9 @@ jobs:
       uses: NuGet/setup-nuget@v1
       with:
         nuget-version: latest
+        
+    - name: Update nuget packages
+      run: nuget update
     
     - name: Download nuget packages
       run: nuget install .\packages.config -OutputDirectory packages
@@ -73,6 +76,7 @@ jobs:
         .\.github\workflows\Update-EsapiHintPaths.ps1 `
         -CsprojFilePath .\ `
         -CsprojFileName MAAS-BreastPlan-helper.csproj
+        
     - name: Build Solution
       run: msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
         
