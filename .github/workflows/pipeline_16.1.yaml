@@ -54,11 +54,14 @@ jobs:
       with:
         nuget-version: latest
         
-    - name: nuget restore
-      run: nuget restore -ConfigFile .\packages.config
+    #- name: nuget restore
+    #  run: nuget restore -ConfigFile .\packages.config
     
     - name: Download nuget packages
       run: nuget install .\packages.config -OutputDirectory packages
+      
+    - name: Nuget Update
+      run: nuget update -reinstall -ignoreDependencies
    
     - name: Add VIC GitHub NuGet repository
       run: nuget source add
