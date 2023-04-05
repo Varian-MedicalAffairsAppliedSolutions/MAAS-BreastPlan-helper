@@ -53,13 +53,13 @@ jobs:
       uses: NuGet/setup-nuget@v1
       with:
         nuget-version: latest
+        
+    - name: nuget restore
+      run: nuget restore -ConfigFile .\packages.config
     
     - name: Download nuget packages
       run: nuget install .\packages.config -OutputDirectory packages
    
-    - name: Update everything
-      run: nuget update -Id * -FrameworkVersion v4.6.1
-
     - name: Add VIC GitHub NuGet repository
       run: nuget source add
         -Name github `
