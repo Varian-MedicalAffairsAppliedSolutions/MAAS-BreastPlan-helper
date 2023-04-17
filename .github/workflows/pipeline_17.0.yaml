@@ -34,12 +34,12 @@ jobs:
     - name: Navigate to Workspace
       run: cd $GITHUB_WORKSPACE
       
-    - name: Update Target Framework Version to 4.8.0
+    - name: Update Target Framework Version to 4.8
       uses: Nambers/ReplaceStringInFile@v1.1
       with:
         path: .\${{env.PROJECT_NAME}}.csproj
         oldString: "TargetFrameworkVersion>v[\\d\\.]+<"
-        newString: 'TargetFrameworkVersion>v4.8.0<'
+        newString: 'TargetFrameworkVersion>v4.8<'
 
     - name: Update AssemblyInfo.cs
       id: update_assembly_info
