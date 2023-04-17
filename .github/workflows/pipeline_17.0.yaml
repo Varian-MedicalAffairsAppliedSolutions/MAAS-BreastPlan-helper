@@ -76,26 +76,11 @@ jobs:
         .\.github\workflows\Update-EsapiHintPaths.ps1 `
         -CsprojFilePath .\ `
         -CsprojFileName MAAS-BreastPlan-helper.csproj
-        
-
-        
-    #- name: Build Solution
-    #  uses: actions/checkout@v3
-    #  uses: actions/setup-dotnet@v3
-    #  with:
-    #    dotnet-version: '4.8.0'
-    #  run: dotnet build .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
-    #  #run: msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
-    
-    - name: Install .NET Framework 4.8
-      uses: actions/setup-dotnet@v1
-      with:
-        include-prerelease: true
-      env:
-        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-        run: |
-          dotnet tool install --global dotnet-framework-installer
-          dotnet-framework-installer install --version "4.8" --quiet
+ 
+    - name: Install .NET Framework 4.8 Developer Pack
+      run: |
+        Invoke-WebRequest https://download.visualstudio.microsoft.com/download/pr/151ab192-7dd2-48cd-b0c7-eeac9b9ea52f/43ecf2329051c7e43f3c5097a2dfab05/ndp48-devpack-enu.exe -OutFile ndp48-devpack-enu.exe
+        .\ndp48-devpack-enu.exe /quiet /norestart
           
     - name: Build Solution
       run: msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
