@@ -87,13 +87,16 @@ jobs:
     #  run: dotnet build .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
     #  #run: msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
     
-    - name: Build Solution
-      uses: actions/setup-dotnet@v3
+    - name: Install .NET Framework 4.8
+      uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '4.8.0'
+        include-prerelease: true
+      env:
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
         run: |
-          dotnet --list-sdks
-          dotnet build .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
+          dotnet tool install --global dotnet-framework-installer
+          dotnet-framework-installer install --version "4.8" --quiet
+          msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
 
         
     - name: Zip
