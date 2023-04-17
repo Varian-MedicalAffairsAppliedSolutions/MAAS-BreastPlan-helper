@@ -96,8 +96,9 @@ jobs:
         run: |
           dotnet tool install --global dotnet-framework-installer
           dotnet-framework-installer install --version "4.8" --quiet
-          msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
-
+          
+    - name: Build Solution
+      run: msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
         
     - name: Zip
       run: |
