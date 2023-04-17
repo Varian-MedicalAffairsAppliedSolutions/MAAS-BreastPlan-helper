@@ -34,6 +34,14 @@ jobs:
     - name: Navigate to Workspace
       run: cd $GITHUB_WORKSPACE
       
+    - name: Install .NET Framework 4.8.0
+      run: |
+        choco install dotnet48 -y
+        
+    - name: Install .NET Framework 4.8.0 targeting pack
+      run: |
+        dotnet add package Microsoft.NETFramework.ReferenceAssemblies -v 4.8.0
+      
     - name: Update Target Framework Version to 4.8.0
       uses: Nambers/ReplaceStringInFile@v1.1
       with:
