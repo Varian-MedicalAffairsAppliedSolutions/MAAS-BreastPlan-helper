@@ -36,7 +36,9 @@ jobs:
       
     - name: Install .NET Framework 4.8.0
       run: |
-        choco install dotnet48 -y
+        choco source add -n=microsoft -s=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json
+        choco install dotnet48 -y --source=microsoft
+
         
     - name: Install .NET Framework 4.8.0 targeting pack
       run: |
