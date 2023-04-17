@@ -29,8 +29,8 @@ jobs:
         fetch-depth: 0
 
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1
-
+      uses: microsoft/setup-msbuild@v1.0.2
+    
     - name: Navigate to Workspace
       run: cd $GITHUB_WORKSPACE
       
