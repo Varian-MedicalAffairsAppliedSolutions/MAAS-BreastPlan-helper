@@ -150,6 +150,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BreastAutoDialog.xaml.cs">
+      <DependentUpon>BreastAutoDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="GridBlockCreator.cs" />
     <Compile Include="MainViewModel.cs" />
     <Compile Include="EthosBeamDialogViewModel.cs" />
@@ -170,6 +173,10 @@
     <Compile Include="TextBoxOutputter.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="BreastAutoDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="EthosBeamDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

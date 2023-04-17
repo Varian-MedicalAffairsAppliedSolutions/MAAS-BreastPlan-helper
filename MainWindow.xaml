@@ -13,8 +13,8 @@
                 <RowDefinition Height="Auto"></RowDefinition>
             </Grid.RowDefinitions>
             <TabControl>
-                <TabItem Name="EthosAutoBeamTab" Header="Auto Beam Placement" />
-                <!--TabItem Name="RapidRodsTab" Header="RapidRods"/-->
+                <TabItem Name="EthosAutoBeamTab" Header="Multi Field Beam Placement" />
+                <TabItem Name="TangAutoPlanTab" Header="Tangential Auto Plan"/>
             </TabControl>
 
             <TextBlock Grid.Row="1" Name="Footer" Background="PaleVioletRed">            
