@@ -93,6 +93,10 @@
                     </ComboBox.Resources>
                 </ComboBox>
 
+                <TextBox x:Name="LMCText" Grid.Column="2" Grid.Row="8" Text="Varian Leaf Motion Calculator [15.6.06]">
+                    
+                </TextBox>
+
                 <!--#endregion-->
 
                 <!--#region List Boxes-->
@@ -123,16 +127,16 @@
 
                 <!--#region Labels-->
 
-                <Label x:Name="lblPatId" Content="Patient ID:" Grid.Column="0" Grid.Row="0" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
+                <Label x:Name="lblPatId" Content="Patient ID:" Grid.Column="0" Grid.Row="0" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
                 <Label x:Name="displayPatId" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,0,0,0" Padding="10,0,30,3" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Content="Patient ID" FontSize="16" FontWeight="Bold" Background="#FFAA4545" Foreground="White"/>
-                <Label x:Name="lblPlanId" Content="Original Plan ID:" Grid.Column="1" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
-                <Label x:Name="lblBreastSide" Content="Breast Side:" Grid.Column="1" Grid.Row="2" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
-                <Label x:Name="lblIpsiLung" Content="Ipsilateral Lung:" Grid.Column="1" Grid.Row="3" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
-                <Label x:Name="lblHeart" Content="Heart:" Grid.Column="1" Grid.Row="4" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
-                <Label x:Name="lblPrescription" Content="Prescription Select:" Grid.Column="1" Grid.Row="5" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
-                <Label x:Name="lblSeparation" Content="Field Separation (cm):" Grid.Column="1" Grid.Row="6" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
-                <Label x:Name="lblBeamEnergy" Content="Beam(s) Energy:" Grid.Column="1" Grid.Row="7" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" FontSize="20"/>
-
+                <Label x:Name="lblPlanId" Content="Original Plan ID:" Grid.Column="1" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblBreastSide" Content="Breast Side:" Grid.Column="1" Grid.Row="2" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblIpsiLung" Content="Ipsilateral Lung:" Grid.Column="1" Grid.Row="3" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblHeart" Content="Heart:" Grid.Column="1" Grid.Row="4" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblPrescription" Content="Prescription Select:" Grid.Column="1" Grid.Row="5" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblSeparation" Content="Field Separation (cm):" Grid.Column="1" Grid.Row="6" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblBeamEnergy" Content="Beam(s) Energy:" Grid.Column="1" Grid.Row="7" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblLMCModel" Content="LMC Model:" Grid.Column="1" Grid.Row="8" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold"/>
                 <!--#endregion-->
 
             </Grid>

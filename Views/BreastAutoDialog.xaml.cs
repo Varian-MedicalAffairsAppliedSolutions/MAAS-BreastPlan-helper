@@ -117,6 +117,8 @@ namespace MAAS_BreastPlan_helper
             InitializeComponent();
         }
 
+
+
         public BreastAutoDialog(ScriptContext context) : this()
         {
             double separation = 0;
@@ -554,8 +556,7 @@ namespace MAAS_BreastPlan_helper
                 #region Calculate Leaf Motions
 
                 //  Set leaf motion calculation model
-                var lmc = plan.GetCalculationModel(CalculationType.PhotonLeafMotions);
-                await UpdateListBox($"leaf motion calc: {lmc}");
+                var lmc = LMCText.Text;
                 copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, lmc);
 
                 //  Calculate the leaf motions
@@ -592,6 +593,7 @@ namespace MAAS_BreastPlan_helper
 
                 //  Create a hotspot structure at the 105 isodose line
                 Structure hotSpot105 = CreateHotColdSpotStructure(copied_plan, "105_hotspot", 105);
+                await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
                 //hotSpot105 = CopiedSS.Structures.FirstOrDefault(x => x.Id == "105_hotspot");
                 //if (hotSpot105 != null)
                 //{
@@ -602,6 +604,8 @@ namespace MAAS_BreastPlan_helper
 
                 //create a coldspot structure at the 100 isodose line
                 Structure coldSpot100 = CreateHotColdSpotStructure(copied_plan, "100_coldspot", 100);
+                await UpdateListBox($"coldspot100 vol: {coldSpot100.Volume}\n");
+                await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
                 //coldSpot100 = CopiedSS.Structures.FirstOrDefault(x => x.Id == "100_coldspot");
                 //if (coldSpot100 != null)
                 //{
@@ -612,20 +616,38 @@ namespace MAAS_BreastPlan_helper
 
                 //  Subtract the current cold spot volume from the PTV and assign the result to the cold spot.
                 coldSpot100.SegmentVolume = ptv.Sub(coldSpot100);
+                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
+                
+                //await UpdateListBox("618\n");
 
                 OptimizationSetup optSet = copied_plan.OptimizationSetup;
+                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
+                //await UpdateListBox("621\n");
                 double recievedPresc = (int)copied_plan.NumberOfFractions * copied_plan.DosePerFraction.Dose;
-
+                //await UpdateListBox($"hotspot volume {hotSpot105.Volume}\n");
+                //await UpdateListBox($"coldspot volume after sub {coldSpot100.Volume}\n");
+                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
+                //await UpdateListBox("623\n");
+                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
                 //if hotspot/coldspot isn't empty add a point objective
-                if (!hotSpot105.IsEmpty)
+                //await UpdateListBox($"hotspot volume {hotSpot105.Volume}\n");
+                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
+                //await UpdateListBox($"hotspot is null: {hotSpot105 == null}\n");
+                
+                if (hotSpot105.Volume > 0)
                 {
+                    await UpdateListBox("628\n");
                     optSet.AddPointObjective(hotSpot105, OptimizationObjectiveOperator.Upper,
                     new DoseValue(1.03 * recievedPresc * scalingFactor, doseUnit), 0, 45);
+                    await UpdateListBox("631\n");
                 }
-                if (!coldSpot100.IsEmpty)
+                await UpdateListBox($"coldspot vol {coldSpot100.Volume}");
+                if (coldSpot100.Volume > 0)
                 {
+                    await UpdateListBox("635\n");
                     optSet.AddPointObjective(coldSpot100, OptimizationObjectiveOperator.Lower,
                     new DoseValue(0.98 * recievedPresc * scalingFactor, doseUnit), 100, 20);
+                    await UpdateListBox("638\n");
                 }
 
                 //if there is any objectives
@@ -638,7 +660,7 @@ namespace MAAS_BreastPlan_helper
                     copied_plan.Optimize(opt);
                     await UpdateListBox("Re-calculating Leaf Motions....");
                     //re-calculate leaf motions after optimization
-                    copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, plan.GetCalculationModel(CalculationType.PhotonLeafMotions)) ;
+                    copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, LMCText.Text) ;
 
                     try
                     {
@@ -801,7 +823,7 @@ namespace MAAS_BreastPlan_helper
         private async void CalculateLeafMotions(ExternalPlanSetup plan, ExternalPlanSetup copied_plan)
         {
             //  Set leaf motion calculation model
-            copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, plan.GetCalculationModel(CalculationType.PhotonLeafMotions));
+            copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, LMCText.Text);
 
             //  Calculate the leaf motions
             await UpdateListBox("Calculating Leaf Motions....");
