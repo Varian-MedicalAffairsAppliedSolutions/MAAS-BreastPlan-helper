@@ -29,20 +29,16 @@ namespace MAAS_BreastPlan_helper
         //define variables
 
         //Dose calculation algorithim, edit this if outdated
-        private readonly string DoseCalculationAlgorithm = "AAA_15606";
-        private readonly string DoseCalculationAlgorithm_Old = "AAA_13623";
+        //private readonly string DoseCalculationAlgorithm = "AAA_15606";
+        //private readonly string DoseCalculationAlgorithm_Old = "AAA_13623";
         //Optimization algorithm, edit this if outdated
-        private readonly string OptimizationAlgorithm = "PO_15606";
+        //private readonly string OptimizationAlgorithm = "PO_15606";
         //Leaf Motion Calculator, edit this if outdated
-        private readonly string LeafMotionCalculator = "Varian Leaf Motion Calculator [15.6.06]";
+        //private readonly string LeafMotionCalculator = "Varian Leaf Motion Calculator [15.6.06]";
 
         //Optimization settings
-        private readonly OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(
-            1000,
-            OptimizationOption.RestartOptimization,
-            OptimizationConvergenceOption.TerminateIfConverged,
-            OptimizationIntermediateDoseOption.UseIntermediateDose,
-            "1");
+        
+
 
         #endregion
 
@@ -281,6 +277,22 @@ namespace MAAS_BreastPlan_helper
 
         #region BtnPlan_Click - where the action is!
 
+        private Tuple<string, string> GetFluenceEnergyMode(Beam bm)
+        {
+            // Lifted from my python code @ craman96/MAAS
+            var energy_mode_splits = bm.EnergyModeDisplayName.Split('-');
+
+            var energy_mode_id = energy_mode_splits[0];
+
+            var primary_fluence_mode = "";
+            if (energy_mode_splits.Length > 1)
+            {
+                primary_fluence_mode = energy_mode_splits[1];
+            }
+
+            return new Tuple<string, string>(primary_fluence_mode, energy_mode_id);
+        }
+
         //async is to allow the listbox in the GUI to update during script run time
         private async void BtnPlan_Click(object sender, RoutedEventArgs e)
         {
@@ -288,6 +300,9 @@ namespace MAAS_BreastPlan_helper
             {
                 //allow modifications to the patient plan.  (JAK, 2023-02-02: moved to the top for emphasis.)
                 Context.Patient.BeginModifications();
+
+                
+
 
                 #region Defining context
 
@@ -301,12 +316,49 @@ namespace MAAS_BreastPlan_helper
                 // Structure set associated with the plan;
                 StructureSet ss = plan.StructureSet;
 
+                // Assert that plan has MLC
+                if (plan.Beams.Where(b => !b.IsSetupField).First().MLC == null)
+                {
+                    await UpdateListBox("Original Plan must have fields MLCs. Returning.");
+                    return;
+                }
+
+                OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(
+                        1000,
+                        OptimizationOption.RestartOptimization,
+                        OptimizationConvergenceOption.TerminateIfConverged,
+                        OptimizationIntermediateDoseOption.UseIntermediateDose,
+                        plan.Beams.First().MLC.Id);
+
+
+                // Get multiplier for dose and dose units
+                var doseUnit = plan.TotalDose.Unit;
+                double scalingFactor = 1;
+                if(doseUnit == DoseValue.DoseUnit.Gy)
+                {
+                    scalingFactor /= 100;
+                } 
+                await UpdateListBox($"Dose unit / scaling factor = {doseUnit.ToString()} / {scalingFactor}");
+
                 #endregion
 
                 #region Begin patient modification and create a copy of a plan from the original plan
 
+                var unpack_getFluenceEnergyMode = GetFluenceEnergyMode(plan.Beams.First());
+                string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
+                string energy_mode_id = unpack_getFluenceEnergyMode.Item2;
+
+                var machineParameters = new ExternalBeamMachineParameters(
+                    plan.Beams.First().TreatmentUnit.Id,
+                    energy_mode_id,
+                    plan.Beams.First().DoseRate,
+                    "STATIC",
+                    primary_fluence_mode
+                );
+
                 //set the machine paramters
-                ExternalBeamMachineParameters machineParameters = new ExternalBeamMachineParameters("TB_H", cboBeamEnergy.SelectedItem.ToString(), 600, "STATIC", string.Empty);
+                /*ExternalBeamMachineParameters machineParameters = new ExternalBeamMachineParameters(
+                    "TB_H", cboBeamEnergy.SelectedItem.ToString(), 600, "STATIC", string.Empty);*/
 
                 await UpdateListBox("Creating copy of plan with slected beam energy....");
                 //create a copy of the original plan by creating a new plan and copying beams from the original plan.
@@ -316,7 +368,10 @@ namespace MAAS_BreastPlan_helper
                 CopyBeams(plan, copied_plan, machineParameters);
 
                 Prescription presc = cboPrescription.SelectedItem as Prescription;
-                copied_plan.SetPrescription(presc.Fractions, new DoseValue(presc.DosePerFraction, DoseValue.DoseUnit.cGy), 1.0);
+
+
+                copied_plan.SetPrescription(presc.Fractions, new DoseValue(presc.DosePerFraction * scalingFactor, doseUnit), 1.0);
+               
 
                 #endregion
 
@@ -350,7 +405,7 @@ namespace MAAS_BreastPlan_helper
                         {
                             //if does is not already calculated, calculate it and display progress
                             await UpdateListBox("Calculating Dose and creating PTV...");
-                            copied_plan.SetCalculationModel(CalculationType.PhotonVolumeDose, DoseCalculationAlgorithm);
+                            copied_plan.SetCalculationModel(CalculationType.PhotonVolumeDose, plan.PhotonCalculationModel);
                             copied_plan.CalculateDose();
 
                             //Add PTV structure
@@ -414,7 +469,7 @@ namespace MAAS_BreastPlan_helper
 
                 #region Optimization
 
-                Optimize(copied_plan, ptv, expandPTV, ipsi_lung);
+                Optimize(opt, plan, copied_plan, ptv, expandPTV, ipsi_lung, scalingFactor, doseUnit);
 
                 #region Unused
 
@@ -499,7 +554,9 @@ namespace MAAS_BreastPlan_helper
                 #region Calculate Leaf Motions
 
                 //  Set leaf motion calculation model
-                copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, LeafMotionCalculator);
+                var lmc = plan.GetCalculationModel(CalculationType.PhotonLeafMotions);
+                await UpdateListBox($"leaf motion calc: {lmc}");
+                copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, lmc);
 
                 //  Calculate the leaf motions
                 await UpdateListBox("Calculating Leaf Motions....");
@@ -563,12 +620,12 @@ namespace MAAS_BreastPlan_helper
                 if (!hotSpot105.IsEmpty)
                 {
                     optSet.AddPointObjective(hotSpot105, OptimizationObjectiveOperator.Upper,
-                    new DoseValue(1.03 * recievedPresc, DoseValue.DoseUnit.cGy), 0, 45);
+                    new DoseValue(1.03 * recievedPresc * scalingFactor, doseUnit), 0, 45);
                 }
                 if (!coldSpot100.IsEmpty)
                 {
                     optSet.AddPointObjective(coldSpot100, OptimizationObjectiveOperator.Lower,
-                    new DoseValue(0.98 * recievedPresc, DoseValue.DoseUnit.cGy), 100, 20);
+                    new DoseValue(0.98 * recievedPresc * scalingFactor, doseUnit), 100, 20);
                 }
 
                 //if there is any objectives
@@ -576,10 +633,12 @@ namespace MAAS_BreastPlan_helper
                 {
                     await UpdateListBox("Re-optimizing....");
                     //optimize plan again
+                    
+
                     copied_plan.Optimize(opt);
                     await UpdateListBox("Re-calculating Leaf Motions....");
                     //re-calculate leaf motions after optimization
-                    copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, LeafMotionCalculator);
+                    copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, plan.GetCalculationModel(CalculationType.PhotonLeafMotions)) ;
 
                     try
                     {
@@ -739,10 +798,10 @@ namespace MAAS_BreastPlan_helper
 
         #region CalculateLeafMotions
 
-        private async void CalculateLeafMotions(ExternalPlanSetup copied_plan)
+        private async void CalculateLeafMotions(ExternalPlanSetup plan, ExternalPlanSetup copied_plan)
         {
             //  Set leaf motion calculation model
-            copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, LeafMotionCalculator);
+            copied_plan.SetCalculationModel(CalculationType.PhotonLeafMotions, plan.GetCalculationModel(CalculationType.PhotonLeafMotions));
 
             //  Calculate the leaf motions
             await UpdateListBox("Calculating Leaf Motions....");
@@ -797,8 +856,8 @@ namespace MAAS_BreastPlan_helper
                 {
                     continue;
                 }
-                if (b.MLC == null)  //  beam is a not a setup field and has no MLCs
-                {
+                else { 
+                    //  beam is a not a setup field 
                     Beam Temp = copy.AddStaticBeam(
                         parameters,
                         b.ControlPoints[0].JawPositions,
@@ -807,8 +866,9 @@ namespace MAAS_BreastPlan_helper
                         b.ControlPoints[0].PatientSupportAngle,
                         b.IsocenterPosition
                         );
-                    Temp.Id = b.Id;
+                    Temp.Id = b.Id;  
                 }
+                /*
                 else// if (b.MLC != null)   //  beam is a not a setup field and has MLCs
                 {
                     Beam Temp = copy.AddMLCBeam(
@@ -821,7 +881,7 @@ namespace MAAS_BreastPlan_helper
                         b.IsocenterPosition
                         );
                     Temp.Id = b.Id;
-                }
+                }*/
             }
         }
 
@@ -854,7 +914,8 @@ namespace MAAS_BreastPlan_helper
 
             //  Change calculation model to reset dose volume to enable structure
             //  set espectially external (body) structure edit option.
-            plan.SetCalculationModel(CalculationType.PhotonVolumeDose, DoseCalculationAlgorithm_Old);
+            var calcModel = plan.PhotonCalculationModel;
+            plan.SetCalculationModel(CalculationType.PhotonVolumeDose, calcModel);
 
             //  Ensure the original external margin is saved.
             Structure external = CopiedSS.Structures.FirstOrDefault(x => x.DicomType == "EXTERNAL");
@@ -1039,11 +1100,11 @@ namespace MAAS_BreastPlan_helper
 
         #region Optimize
 
-        private async void Optimize(ExternalPlanSetup copied_plan, Structure ptv, Structure expandPTV, Structure ipsi_lung)
+        private async void Optimize(OptimizationOptionsIMRT opt, ExternalPlanSetup plan, ExternalPlanSetup copied_plan, Structure ptv, Structure expandPTV, Structure ipsi_lung, double scalingFactor, DoseValue.DoseUnit doseUnit)
         {
             //Set Calculation Model back to optimization
-            copied_plan.SetCalculationModel(CalculationType.PhotonVolumeDose, DoseCalculationAlgorithm);
-            copied_plan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, OptimizationAlgorithm);
+            copied_plan.SetCalculationModel(CalculationType.PhotonVolumeDose, plan.PhotonCalculationModel);
+            copied_plan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, plan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
             await UpdateListBox("Optimizing....");
             //Optimization       
             OptimizationSetup optSet = copied_plan.OptimizationSetup;
@@ -1051,9 +1112,9 @@ namespace MAAS_BreastPlan_helper
             double recievedPresc = (int)copied_plan.NumberOfFractions * copied_plan.DosePerFraction.Dose;
 
             //set optimization objective values for each PTV
-            DoseValue upperPTV = new DoseValue(1.02 * recievedPresc, "cGy");
-            DoseValue lowerExt = new DoseValue(0.12 * recievedPresc, "cGy");
-            DoseValue lowerPTV = new DoseValue(1.01 * recievedPresc, "cGy");
+            DoseValue upperPTV = new DoseValue(1.02 * recievedPresc * scalingFactor, doseUnit);
+            DoseValue lowerExt = new DoseValue(0.12 * recievedPresc * scalingFactor, doseUnit);
+            DoseValue lowerPTV = new DoseValue(1.01 * recievedPresc * scalingFactor, doseUnit);
 
             //Set Objectives for each energy depending on selected energy
             Energy energy = cboBeamEnergy.SelectedItem as Energy;
@@ -1067,15 +1128,15 @@ namespace MAAS_BreastPlan_helper
             {
                 case 6:
                     optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 102);
-                    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
+                    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400 * scalingFactor, doseUnit), 1, 30);
                     break;
                 case 10:
                     optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-                    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 20);
+                    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400 * scalingFactor, doseUnit), 1, 20);
                     break;
                 case 15:
                     optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-                    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
+                    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400 * scalingFactor , doseUnit), 1, 30);
                     break;
                 default:
                     break;
