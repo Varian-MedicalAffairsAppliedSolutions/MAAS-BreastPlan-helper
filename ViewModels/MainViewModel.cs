@@ -1,4 +1,4 @@
-﻿using MAAS_BreastPlan_helper.GridBlockCreator;
+﻿using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 using NLog.Layouts;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 
-namespace GridBlockCreator
+namespace MAAS_BreastPlan_helper
 {
 	
 

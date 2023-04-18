@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 
-namespace GridBlockCreator
+namespace MAAS_BreastPlan_helper
 {
     public class TextBoxOutputter : TextWriter
     {

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MAAS_BreastPlan_helper
 {
-    namespace GridBlockCreator
+    namespace MAAS_BreastPlan_helper
     {
         public class SettingsClass
         {

@@ -7,13 +7,13 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
-using GridBlockCreator;
+using MAAS_BreastPlan_helper;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using Newtonsoft.Json;
-using MAAS_BreastPlan_helper.GridBlockCreator;
+using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 
 // TODO: Uncomment the following line if the script requires write access.
 //15.x or later:

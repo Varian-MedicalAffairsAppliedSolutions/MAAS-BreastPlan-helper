@@ -20,7 +20,7 @@ using NLog;
 using System.Net.NetworkInformation;
 using System.ComponentModel;
  
-namespace GridBlockCreator
+namespace MAAS_BreastPlan_helper
 {
     /// <summary>
     /// Interaction logic for EthosBeamDialog.xaml

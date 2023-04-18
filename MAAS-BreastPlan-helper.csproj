@@ -150,13 +150,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BreastAutoDialog.xaml.cs">
+    <Compile Include="Models\TextBlockOutputter.cs" />
+    <Compile Include="Views\BreastAutoDialog.xaml.cs">
       <DependentUpon>BreastAutoDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="GridBlockCreator.cs" />
-    <Compile Include="MainViewModel.cs" />
-    <Compile Include="EthosBeamDialogViewModel.cs" />
-    <Compile Include="EthosBeamDialog.xaml.cs">
+    <Compile Include="Script.cs" />
+    <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="ViewModels\EthosBeamDialogViewModel.cs" />
+    <Compile Include="Views\EthosBeamDialog.xaml.cs">
       <DependentUpon>EthosBeamDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyExpirationDate.cs" />
@@ -166,22 +167,21 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="MainWindow.xaml.cs">
+    <Compile Include="Views\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="SettingsClass.cs" />
-    <Compile Include="TextBoxOutputter.cs" />
+    <Compile Include="Models\SettingsClass.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="BreastAutoDialog.xaml">
+    <Page Include="Views\BreastAutoDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="EthosBeamDialog.xaml">
+    <Page Include="Views\EthosBeamDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="MainWindow.xaml">
+    <Page Include="Views\MainWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

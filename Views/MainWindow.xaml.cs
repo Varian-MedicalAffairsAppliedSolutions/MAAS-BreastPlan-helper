@@ -14,7 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using VMS.TPS.Common.Model.API;
 
-namespace GridBlockCreator
+namespace MAAS_BreastPlan_helper
 {
     /// <summary>
     /// Interaction logic for Window1.xaml

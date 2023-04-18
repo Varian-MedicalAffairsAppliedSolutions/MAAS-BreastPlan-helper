@@ -16,7 +16,7 @@ using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 
 
-namespace GridBlockCreator
+namespace MAAS_BreastPlan_helper
 {  
     public class OffsetBeam
     {
