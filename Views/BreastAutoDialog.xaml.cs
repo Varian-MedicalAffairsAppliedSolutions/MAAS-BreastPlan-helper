@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -266,7 +267,7 @@ namespace MAAS_BreastPlan_helper
         #endregion
 
         #region Event Handlers
-
+        
         #region BtnClose_Click
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
@@ -591,63 +592,52 @@ namespace MAAS_BreastPlan_helper
 
                 await UpdateListBox("Creating Hot and Cold Spots....");
 
-                //  Create a hotspot structure at the 105 isodose line
-                Structure hotSpot105 = CreateHotColdSpotStructure(copied_plan, "105_hotspot", 105);
-                await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
-                //hotSpot105 = CopiedSS.Structures.FirstOrDefault(x => x.Id == "105_hotspot");
-                //if (hotSpot105 != null)
-                //{
-                //    CopiedSS.RemoveStructure(hotSpot105);
-                //}
-                //hotSpot105 = CopiedSS.AddStructure("DOSE_REGION", "105_hotspot");
-                //hotSpot105.ConvertDoseLevelToStructure(copied_plan.Dose, new DoseValue(105, DoseValue.DoseUnit.Percent));
+                //Structure coldSpot100 = CreateHotColdSpotStructure(copied_plan, "100_coldspot", 100);
+                //coldSpot100.SegmentVolume = ptv.Sub(coldSpot100);
+                //var coldVol = coldSpot100.Volume;
 
-                //create a coldspot structure at the 100 isodose line
-                Structure coldSpot100 = CreateHotColdSpotStructure(copied_plan, "100_coldspot", 100);
-                await UpdateListBox($"coldspot100 vol: {coldSpot100.Volume}\n");
-                await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
-                //coldSpot100 = CopiedSS.Structures.FirstOrDefault(x => x.Id == "100_coldspot");
-                //if (coldSpot100 != null)
-                //{
-                //    CopiedSS.RemoveStructure(coldSpot100);
-                //}
-                //coldSpot100 = CopiedSS.AddStructure("DOSE_REGION", "100_coldspot");
-                //coldSpot100.ConvertDoseLevelToStructure(copied_plan.Dose, new DoseValue(100, DoseValue.DoseUnit.Percent));
+                //Structure copyCold = CopiedSS.AddStructure("DOSE_REGION", "coldCopy");
+                //copyCold.SegmentVolume = coldSpot100.SegmentVolume;
 
-                //  Subtract the current cold spot volume from the PTV and assign the result to the cold spot.
-                coldSpot100.SegmentVolume = ptv.Sub(coldSpot100);
-                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
-                
-                //await UpdateListBox("618\n");
+                //Structure copyPtv = CopiedSS.AddStructure("PTV", "PTVCopy");
+                //copyPtv.SegmentVolume= ptv.SegmentVolume;
+
+                //Structure hotSpot105 = CreateHotColdSpotStructure(copied_plan, "105_hotspot", 105);
+                //var hotVol = hotSpot105.Volume;
+
+                Structure coldSpot100 = CopiedSS.AddStructure("DOSE_REGION", "coldSpot100");
+                coldSpot100.ConvertDoseLevelToStructure(copied_plan.Dose, new DoseValue(100, DoseValue.DoseUnit.Percent));
+                coldSpot100.SegmentVolume = ptv.Sub(coldSpot100.SegmentVolume);
+
+                Structure hotSpot105 = CopiedSS.AddStructure("DOSE_REGION", "hotSpot105");
+                hotSpot105.ConvertDoseLevelToStructure(copied_plan.Dose, new DoseValue(105, DoseValue.DoseUnit.Percent));
+
+                await UpdateListBox("coldspot subtraction complete");
+   
+  
 
                 OptimizationSetup optSet = copied_plan.OptimizationSetup;
-                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
-                //await UpdateListBox("621\n");
+                await UpdateListBox("Opt setup complete");
+                
                 double recievedPresc = (int)copied_plan.NumberOfFractions * copied_plan.DosePerFraction.Dose;
-                //await UpdateListBox($"hotspot volume {hotSpot105.Volume}\n");
-                //await UpdateListBox($"coldspot volume after sub {coldSpot100.Volume}\n");
-                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
-                //await UpdateListBox("623\n");
-                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
-                //if hotspot/coldspot isn't empty add a point objective
-                //await UpdateListBox($"hotspot volume {hotSpot105.Volume}\n");
-                //await UpdateListBox($"hotspot 105 is null: {hotSpot105 == null}\n");
-                //await UpdateListBox($"hotspot is null: {hotSpot105 == null}\n");
+   
+                await UpdateListBox("623");
+               
                 
                 if (hotSpot105.Volume > 0)
                 {
-                    await UpdateListBox("628\n");
+                    await UpdateListBox("628");
                     optSet.AddPointObjective(hotSpot105, OptimizationObjectiveOperator.Upper,
-                    new DoseValue(1.03 * recievedPresc * scalingFactor, doseUnit), 0, 45);
-                    await UpdateListBox("631\n");
+                    new DoseValue(1.03 * recievedPresc, doseUnit), 0, 45);
+                    await UpdateListBox("631");
                 }
                 await UpdateListBox($"coldspot vol {coldSpot100.Volume}");
                 if (coldSpot100.Volume > 0)
                 {
-                    await UpdateListBox("635\n");
+                    await UpdateListBox("635");
                     optSet.AddPointObjective(coldSpot100, OptimizationObjectiveOperator.Lower,
-                    new DoseValue(0.98 * recievedPresc * scalingFactor, doseUnit), 100, 20);
-                    await UpdateListBox("638\n");
+                    new DoseValue(0.98 * recievedPresc, doseUnit), 100, 20);
+                    await UpdateListBox("638");
                 }
 
                 //if there is any objectives
@@ -1081,7 +1071,10 @@ namespace MAAS_BreastPlan_helper
                 CopiedSS.RemoveStructure(structure);
             }
             structure = CopiedSS.AddStructure("DOSE_REGION", "100_coldspot");
-            structure.ConvertDoseLevelToStructure(copied_plan.Dose, new DoseValue(dose, DoseValue.DoseUnit.Percent));
+            var DL = new DoseValue(dose, DoseValue.DoseUnit.Percent);
+            Debug.Assert(DL.IsRelativeDoseValue);
+            MessageBox.Show($"DoseValue {DL}");
+            structure.ConvertDoseLevelToStructure(copied_plan.Dose, DL);
 
             return structure;
         }
@@ -1131,12 +1124,14 @@ namespace MAAS_BreastPlan_helper
             //Optimization       
             OptimizationSetup optSet = copied_plan.OptimizationSetup;
             //Perscription dose
+            
+            // -- Test fix Gy/cGy scaling by removing scaling factor -- 
             double recievedPresc = (int)copied_plan.NumberOfFractions * copied_plan.DosePerFraction.Dose;
 
             //set optimization objective values for each PTV
-            DoseValue upperPTV = new DoseValue(1.02 * recievedPresc * scalingFactor, doseUnit);
-            DoseValue lowerExt = new DoseValue(0.12 * recievedPresc * scalingFactor, doseUnit);
-            DoseValue lowerPTV = new DoseValue(1.01 * recievedPresc * scalingFactor, doseUnit);
+            DoseValue upperPTV = new DoseValue(1.02 * recievedPresc, doseUnit);
+            DoseValue lowerExt = new DoseValue(0.12 * recievedPresc, doseUnit);
+            DoseValue lowerPTV = new DoseValue(1.01 * recievedPresc, doseUnit);
 
             //Set Objectives for each energy depending on selected energy
             Energy energy = cboBeamEnergy.SelectedItem as Energy;
