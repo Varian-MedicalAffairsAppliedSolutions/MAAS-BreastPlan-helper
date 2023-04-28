@@ -16,6 +16,7 @@ using Prism;
 using Prism.Mvvm;
 using System.Configuration;
 using Prism.Commands;
+using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
@@ -207,13 +208,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
             public int High;
         }
 
-        public BreastAutoDialogViewModel(ScriptContext context)
+        public BreastAutoDialogViewModel(ScriptContext context, SettingsClass settings)
         {
             StatusBoxItems = new ObservableCollection<string>();
             PTVItems = new ObservableCollection<Structure>();
             CbCustomPTV_Click = new DelegateCommand(OnCustomPTV_Click);
             BtnPlan_Click = new DelegateCommand(OnBtnPlan_Click);
-            LMCText = "Varian Leaf Motion Calculator [15.6.06]";
+            LMCText = settings.LMCModel;
 
             double separation = 0;
             Context = context;

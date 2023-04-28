@@ -118,7 +118,7 @@ namespace VMS.TPS
         }
 
 
-        var mainWindow = new MainWindow(context)
+        var mainWindow = new MainWindow(context, settings)
         {
             DataContext  = new MainViewModel(settings)
         };

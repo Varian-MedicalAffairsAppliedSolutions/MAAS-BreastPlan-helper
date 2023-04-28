@@ -1,4 +1,5 @@
 ﻿using MAAS_BreastPlan_helper;
+using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 using MAAS_BreastPlan_helper.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -25,11 +26,11 @@ namespace MAAS_BreastPlan_helper
     // TODO: make second tab the default
     public partial class MainWindow : Window
     {
-        public MainWindow(ScriptContext context)
+        public MainWindow(ScriptContext context, SettingsClass settings)
         {
             InitializeComponent();
-            //EthosAutoBeamTab.Content = new EthosBeamDialog() { DataContext = new EthosBeamDialogViewModel(context) };
-            TangAutoPlanTab.Content = new BreastAutoDialog() { DataContext = new BreastAutoDialogViewModel(context) };
+            EthosAutoBeamTab.Content = new EthosBeamDialog() { DataContext = new EthosBeamDialogViewModel(context) };
+            TangAutoPlanTab.Content = new BreastAutoDialog() { DataContext = new BreastAutoDialogViewModel(context, settings) };
         }
     }
 }
