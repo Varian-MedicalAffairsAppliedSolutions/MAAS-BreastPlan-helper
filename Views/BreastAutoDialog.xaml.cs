@@ -24,27 +24,6 @@ namespace MAAS_BreastPlan_helper
     public partial class BreastAutoDialog : UserControl
     {
         enum SIDE { RIGHT, LEFT, ERROR };
-
-        #region Variable definitions
-
-        //define variables
-
-        //Dose calculation algorithim, edit this if outdated
-        //private readonly string DoseCalculationAlgorithm = "AAA_15606";
-        //private readonly string DoseCalculationAlgorithm_Old = "AAA_13623";
-        //Optimization algorithm, edit this if outdated
-        //private readonly string OptimizationAlgorithm = "PO_15606";
-        //Leaf Motion Calculator, edit this if outdated
-        //private readonly string LeafMotionCalculator = "Varian Leaf Motion Calculator [15.6.06]";
-
-        //Optimization settings
-        
-
-
-        #endregion
-
-        #region Internal classes/structs
-
         private class BreastSide
         {
             public BreastSide(StructureSet ss, string side, string lungId, AxisAlignedMargins margins)
@@ -109,16 +88,10 @@ namespace MAAS_BreastPlan_helper
             public int High;
         }
 
-        #endregion
-
-        #region Constructors
-
         public BreastAutoDialog()
         {
             InitializeComponent();
         }
-
-
 
         public BreastAutoDialog(ScriptContext context) : this()
         {
@@ -131,7 +104,6 @@ namespace MAAS_BreastPlan_helper
 
             displayPatId.Content = context.Patient.Id;
 
-            #region cboPlanId ComboBox
 
             //  Creating a list of plansetups in the course in context and attach it to cboPlanId Combobox
             List<string> ps_list = course.PlanSetups.Select(s => s.Id).ToList();
@@ -146,9 +118,6 @@ namespace MAAS_BreastPlan_helper
                 cboPlanId.SelectedItem = ps_list.FirstOrDefault(x => x == Plan.Id);
             }
 
-            #endregion
-
-            #region cboBreastSide ComboBox
 
             List<BreastSide> brSide = new List<BreastSide>()
             {
@@ -161,10 +130,6 @@ namespace MAAS_BreastPlan_helper
             {
                 cboBreastSide.SelectedIndex = (int)FindTreatmentSide(Plan);
             }
-
-            #endregion
-
-            #region cboIpsiLung ComboBox
 
             //Creating a list of lung Ids
             List<string> Lung_Ids = ss.Structures.Where(x => x.Id.ToUpper().Contains("LUNG")).Select(x => x.Id).ToList();
@@ -182,10 +147,7 @@ namespace MAAS_BreastPlan_helper
             {
                 MessageBox.Show("Please select ipsi lateral lung Id");
             }
-
-            #endregion
-
-            #region heartList ComboBox
+       
 
             //Creating a list of heart Ids
             List<string> Heart_Ids = ss.Structures.Where(x => x.Id.ToUpper().Contains("HEART")).Select(x => x.Id).ToList();
@@ -199,10 +161,6 @@ namespace MAAS_BreastPlan_helper
                 cboHeart.SelectedItem = heart;
             }
 
-            #endregion
-
-            #region cboPrescription ComboBox
-
             //  JAK: This cleans up the code further down, but retains ease of modification.
             List<Prescription> prescriptions = new List<Prescription>
             {
@@ -212,24 +170,6 @@ namespace MAAS_BreastPlan_helper
                 new Prescription(){Fractions = 25, DoseCGy = 5000}
             };
             cboPrescription.ItemsSource = prescriptions;
-
-            #region Unused
-
-            //List<string> prescritions_list = new List<string>
-            //{
-            //    "4250 cGy in 16 Fx",
-            //    "2600 cGy in 5 Fx",
-            //    "4000 cGy in 15 Fx",
-            //    "5000 cGy in 25 Fx"
-            //};
-
-            //PrescriptionValue.ItemsSource = prescritions_list;
-
-            #endregion
-
-            #endregion
-
-            #region cboBeamEnergy ComboBox
 
             // Beam sepation calculation
             Structure external = Plan.StructureSet.Structures.FirstOrDefault(x => x.Id.ToUpper().Contains("BODY"));
@@ -260,25 +200,13 @@ namespace MAAS_BreastPlan_helper
             IEnumerable<int> selected = energies.Where(x => x.IsInRange(separation)).Select(x => x.Index);
             cboBeamEnergy.SelectedIndex = selected.ElementAt(0);
 
-            #endregion
-
         }
-
-        #endregion
-
-        #region Event Handlers
-        
-        #region BtnClose_Click
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
             Window window = Parent as Window;
             window.Close();
         }
-
-        #endregion
-
-        #region BtnPlan_Click - where the action is!
 
         private Tuple<string, string> GetFluenceEnergyMode(Beam bm)
         {
@@ -303,11 +231,6 @@ namespace MAAS_BreastPlan_helper
             {
                 //allow modifications to the patient plan.  (JAK, 2023-02-02: moved to the top for emphasis.)
                 Context.Patient.BeginModifications();
-
-                
-
-
-                #region Defining context
 
                 //await allows another process to run, in this case allows the GUI to update
                 await UpdateListBox("Starting to Plan....");
@@ -343,9 +266,8 @@ namespace MAAS_BreastPlan_helper
                 } 
                 await UpdateListBox($"Dose unit / scaling factor = {doseUnit.ToString()} / {scalingFactor}");
 
-                #endregion
 
-                #region Begin patient modification and create a copy of a plan from the original plan
+
 
                 var unpack_getFluenceEnergyMode = GetFluenceEnergyMode(plan.Beams.First());
                 string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
@@ -375,10 +297,6 @@ namespace MAAS_BreastPlan_helper
 
                 copied_plan.SetPrescription(presc.Fractions, new DoseValue(presc.DosePerFraction * scalingFactor, doseUnit), 1.0);
                
-
-                #endregion
-
-                #region PTV creation when customized PTV option not used
 
                 Structure ptv = null;
 
@@ -422,10 +340,6 @@ namespace MAAS_BreastPlan_helper
                     ptv.SegmentVolume = ptv.AsymmetricMargin(margins1);
                 }
 
-                #endregion
-
-                #region PTV selection and use when customized PTV option not used 
-
                 //Select customized PTV if cutomized PTV checkbox is checked 
                 else if (cboPtvID.SelectedIndex >= -1 && (bool)cbCustomPTV.IsChecked)
                 {
@@ -436,9 +350,7 @@ namespace MAAS_BreastPlan_helper
                 {
                     MessageBox.Show("Please select a valid PTV or close the window and create one.");
                 }
-                #endregion
 
-                #region Create Expanded PTV to include flesh
 
                 //Create 2.5 cm expansion on PTV in anterio-lateral directions to include flash;
 
@@ -460,101 +372,11 @@ namespace MAAS_BreastPlan_helper
                     return;
                 }
 
-                #endregion
-
-                #region Creating 5mm outer margins for ipsilateral lung and heart from PTV for OAR sparing 
-
                 //store the ipsilateral lung
                 Structure ipsi_lung = CopiedSS.Structures.FirstOrDefault(x => x.Id == cboIpsiLung.SelectedItem.ToString());
                 SpareLungHeart(ptv, ipsi_lung);
 
-                #endregion
-
-                #region Optimization
-
                 Optimize(opt, plan, copied_plan, ptv, expandPTV, ipsi_lung, scalingFactor, doseUnit);
-
-                #region Unused
-
-                ////Set Calculation Model back to optimization
-                //copied_plan.SetCalculationModel(CalculationType.PhotonVolumeDose, DoseCalculationAlgorithm);
-                //copied_plan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, OptimizationAlgorithm);
-                //await UpdateListBox("Optimizing....");
-                ////Optimization       
-                //OptimizationSetup optSet = copied_plan.OptimizationSetup;
-                ////Perscription dose
-                //double recievedPresc = (int)copied_plan.NumberOfFractions * copied_plan.DosePerFraction.Dose;
-
-                ////set optimization objective values for each PTV
-                //DoseValue upperPTV = new DoseValue(1.02 * recievedPresc, "cGy");
-                //DoseValue lowerExt = new DoseValue(0.12 * recievedPresc, "cGy");
-                //DoseValue lowerPTV = new DoseValue(1.01 * recievedPresc, "cGy");
-
-                ////Set Objectives for each energy depending on selected energy
-                //Energy energy = cboBeamEnergy.SelectedItem as Energy;
-
-                ////  Set upper point objective for the PTV, and lower point objective for the expanded PTV.
-                //optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Upper, upperPTV, 0, 100);
-                //optSet.AddPointObjective(expandPTV, OptimizationObjectiveOperator.Lower, lowerExt, 100, 2); //  JAK: Question: does lowerExt refer to the expanded PTV or the External contour?
-
-                ////  Set lower point objectives for PTV and EUD objective for the ipsilateral lung to shield it
-                //switch (energy.MeV)
-                //{
-                //    case 6:
-                //        optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 102);
-                //        optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
-                //        break;
-                //    case 10:
-                //        optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-                //        optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 20);
-                //        break;
-                //    case 15:
-                //        optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-                //        optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
-                //        break;
-                //    default:
-                //        break;
-                //}
-
-                //6X
-                //if (cboBeamEnergy.SelectedIndex == 0)
-                //{
-                //    //add upper and lower point objectives for PTV and a lower for expanded PTV
-                //    //optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Upper, upperPTV, 0, 100);
-                //    //optSet.AddPointObjective(expandPTV, OptimizationObjectiveOperator.Lower, lowerExt, 100, 2); //  JAK: Question: does lowerExt refer to the expanded PTV or the External contour?
-                //    optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 102);
-                //    //Add EUD objective for the ipsilateral lung to shield it
-                //    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
-                //}
-                ////10X
-                //else if (cboBeamEnergy.SelectedIndex == 1)
-                //{
-                //    //add upper and lower point objectives for PTV and a lower for expanded PTV
-                //    //optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Upper, upperPTV, 0, 100);
-                //    //optSet.AddPointObjective(expandPTV, OptimizationObjectiveOperator.Lower, lowerExt, 100, 2);
-                //    optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-                //    //Add EUD objective for the ipsilateral lung to shield it
-                //    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 20);
-                //}
-                ////15X
-                //else// if (cboBeamEnergy.SelectedIndex == 2)
-                //{
-                //    //add upper and lower point objectives for PTV and a lower for expanded PTV
-                //    //optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Upper, upperPTV, 0, 100);
-                //    //optSet.AddPointObjective(expandPTV, OptimizationObjectiveOperator.Lower, lowerExt, 100, 2);
-                //    optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-                //    //Add EUD objective for the ipsilateral lung to shield it
-                //    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
-                //}
-
-                ////  Optimize the copied plan
-                //copied_plan.Optimize(opt);
-
-                #endregion
-
-                #endregion
-
-                #region Calculate Leaf Motions
 
                 //  Set leaf motion calculation model
                 var lmc = LMCText.Text;
@@ -572,38 +394,14 @@ namespace MAAS_BreastPlan_helper
                     MessageBox.Show("\n Leaf motion calc unsuccessfull");
                     return;
                 }
-                //try
-                //{
-                //    CalculateLeafMotions(copied_plan);
-                //}
-                //catch
-                //{
-                //    MessageBox.Show("\n Leaf motion calc unsuccessfull");
-                //    return;
-                //}
-
-                #endregion
 
                 //  Re-calculate dose
                 await UpdateListBox("Calculating Dose....");
                 copied_plan.CalculateDose();
 
-                #region Hot & cold spot generation, reoptimization and final dose calculation
 
                 await UpdateListBox("Creating Hot and Cold Spots....");
 
-                //Structure coldSpot100 = CreateHotColdSpotStructure(copied_plan, "100_coldspot", 100);
-                //coldSpot100.SegmentVolume = ptv.Sub(coldSpot100);
-                //var coldVol = coldSpot100.Volume;
-
-                //Structure copyCold = CopiedSS.AddStructure("DOSE_REGION", "coldCopy");
-                //copyCold.SegmentVolume = coldSpot100.SegmentVolume;
-
-                //Structure copyPtv = CopiedSS.AddStructure("PTV", "PTVCopy");
-                //copyPtv.SegmentVolume= ptv.SegmentVolume;
-
-                //Structure hotSpot105 = CreateHotColdSpotStructure(copied_plan, "105_hotspot", 105);
-                //var hotVol = hotSpot105.Volume;
 
                 Structure coldSpot100 = CopiedSS.AddStructure("DOSE_REGION", "coldSpot100");
                 coldSpot100.ConvertDoseLevelToStructure(copied_plan.Dose, new DoseValue(100, DoseValue.DoseUnit.Percent));
@@ -667,9 +465,6 @@ namespace MAAS_BreastPlan_helper
                     copied_plan.CalculateDose();
                 }
 
-                #endregion
-
-                #region Plan ID assignment and end of plan generation
 
                 //Name the new plan as SW_PhotonEnergy
                 string pId = "SW_" + cboBeamEnergy.SelectedItem.ToString();
@@ -704,11 +499,6 @@ namespace MAAS_BreastPlan_helper
 
                 //Display the finishing messages
                 await UpdateListBox("Planning is done...");
-#if !DEBUG
-                MessageBox.Show("Please open and evalute new plan with ID:\n" + copied_plan.Id);
-#endif
-
-                #endregion
 
             }
             catch (Exception ex)
@@ -718,9 +508,6 @@ namespace MAAS_BreastPlan_helper
             }
         }
 
-        #endregion
-
-        #region CbCustomPTV_Click
         // Checkbox to select customized PTV created by the user.
         private void CbCustomPTV_Click(object sender, RoutedEventArgs e)
         {
@@ -743,9 +530,8 @@ namespace MAAS_BreastPlan_helper
                 lblPtvId.IsEnabled = false;
             }
         }
-        #endregion
 
-        #region Window_Loaded (close window on error)
+
 
         //Window (i.e. GUI) loading event function created to close window if no patient and/or course is loaded
         private void Window_Loaded(object sender, EventArgs e)
@@ -753,16 +539,6 @@ namespace MAAS_BreastPlan_helper
             Window window = sender as Window;
             window.Close();
         }
-
-        #endregion
-
-        #endregion
-
-        #region Functions
-
-        #region Beam Separation Functions
-
-        #region DirectionTowardSource
 
         /// <summary>
         /// Fine the beam direction vector pointing towards the source.
@@ -777,9 +553,6 @@ namespace MAAS_BreastPlan_helper
             return dirVec;
         }
 
-        #endregion
-
-        #region GetStructureEntryPoint
 
         /// <summary>
         /// Determine the entry point of a radiation beam into a structure.
@@ -804,11 +577,6 @@ namespace MAAS_BreastPlan_helper
             return startPoint;
         }
 
-        #endregion
-
-        #endregion
-
-        #region CalculateLeafMotions
 
         private async void CalculateLeafMotions(ExternalPlanSetup plan, ExternalPlanSetup copied_plan)
         {
@@ -828,10 +596,6 @@ namespace MAAS_BreastPlan_helper
             }
         }
 
-        #endregion
-
-        #region ComputeBeamSeparation
-
         /// <summary>
         /// Compute the separation (in mm) between the entry points of two beams to a structure.
         /// </summary>
@@ -850,9 +614,6 @@ namespace MAAS_BreastPlan_helper
             return (results1 - results2).Length;
         }
 
-        #endregion
-
-        #region CopyBeams
 
         /// <summary>
         /// Copy the radiation beams from one plan to another.
@@ -897,10 +658,6 @@ namespace MAAS_BreastPlan_helper
             }
         }
 
-        #endregion
-
-        #region CreateExpandedPTV
-
         /// <summary>
         /// Use an asymmetric margin, depending on treatment side, to expand the PTV
         /// </summary>
@@ -920,7 +677,7 @@ namespace MAAS_BreastPlan_helper
 
             expandPTV.SegmentVolume = ptv.AsymmetricMargin(margins);
 
-            #region Checking/Removing holes in body structure
+
 
             await UpdateListBox("Checking/Removing holes in body structure....");
 
@@ -960,7 +717,7 @@ namespace MAAS_BreastPlan_helper
                 CopiedSS.RemoveStructure(ext_test2);
             }
 
-            #endregion
+            
 
             return expandPTV;
         }
@@ -1005,7 +762,7 @@ namespace MAAS_BreastPlan_helper
             return ext_test2;
         }
 
-        #region Functions used for checking/removing holes in external/body structure
+        
 
         /// <summary>
         /// Finds the high and low slice indices of a structure in reference to a particular structure set.
@@ -1057,11 +814,10 @@ namespace MAAS_BreastPlan_helper
             return Convert.ToInt32((z - SS.Image.Origin.z) / imageRes);
         }
 
-        #endregion
 
-        #endregion
 
-        #region CreateHotColdSpot
+
+
 
         private Structure CreateHotColdSpotStructure(ExternalPlanSetup copied_plan, string ID, double dose)
         {
@@ -1079,9 +835,9 @@ namespace MAAS_BreastPlan_helper
             return structure;
         }
 
-        #endregion
 
-        #region FindTreatmentSide
+
+
 
         /// <summary>
         /// Determine breast side based on isocenter coordinates
@@ -1111,9 +867,7 @@ namespace MAAS_BreastPlan_helper
             }
         }
 
-        #endregion
 
-        #region Optimize
 
         private async void Optimize(OptimizationOptionsIMRT opt, ExternalPlanSetup plan, ExternalPlanSetup copied_plan, Structure ptv, Structure expandPTV, Structure ipsi_lung, double scalingFactor, DoseValue.DoseUnit doseUnit)
         {
@@ -1159,49 +913,12 @@ namespace MAAS_BreastPlan_helper
                     break;
             }
 
-            #region Unused
-
-            //6X
-            //if (cboBeamEnergy.SelectedIndex == 0)
-            //{
-            //    //add upper and lower point objectives for PTV and a lower for expanded PTV
-            //    //optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Upper, upperPTV, 0, 100);
-            //    //optSet.AddPointObjective(expandPTV, OptimizationObjectiveOperator.Lower, lowerExt, 100, 2); //  JAK: Question: does lowerExt refer to the expanded PTV or the External contour?
-            //    optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 102);
-            //    //Add EUD objective for the ipsilateral lung to shield it
-            //    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
-            //}
-            ////10X
-            //else if (cboBeamEnergy.SelectedIndex == 1)
-            //{
-            //    //add upper and lower point objectives for PTV and a lower for expanded PTV
-            //    //optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Upper, upperPTV, 0, 100);
-            //    //optSet.AddPointObjective(expandPTV, OptimizationObjectiveOperator.Lower, lowerExt, 100, 2);
-            //    optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-            //    //Add EUD objective for the ipsilateral lung to shield it
-            //    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 20);
-            //}
-            ////15X
-            //else// if (cboBeamEnergy.SelectedIndex == 2)
-            //{
-            //    //add upper and lower point objectives for PTV and a lower for expanded PTV
-            //    //optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Upper, upperPTV, 0, 100);
-            //    //optSet.AddPointObjective(expandPTV, OptimizationObjectiveOperator.Lower, lowerExt, 100, 2);
-            //    optSet.AddPointObjective(ptv, OptimizationObjectiveOperator.Lower, lowerPTV, 100, 105);
-            //    //Add EUD objective for the ipsilateral lung to shield it
-            //    optSet.AddEUDObjective(ipsi_lung, OptimizationObjectiveOperator.Upper, new DoseValue(400, "cGy"), 1, 30);
-            //}
-
-            #endregion
-
             //  Optimize the copied plan
             copied_plan.Optimize(opt);
 
         }
 
-        #endregion
 
-        #region SpareLungHeart
 
         private void SpareLungHeart(Structure ptv, Structure ipsi_lung)
         {
@@ -1227,9 +944,7 @@ namespace MAAS_BreastPlan_helper
             CopiedSS.RemoveStructure(heart_placeholder);
         }
 
-        #endregion
 
-        #region UpdateListBox
 
         /// <summary>
         /// Update the 'status' list box, adding string 's'.
@@ -1243,16 +958,12 @@ namespace MAAS_BreastPlan_helper
             await Task.Delay(1);
         }
 
-        #endregion
-
-        #endregion
-
-        #region Properties
+       
 
         private ScriptContext Context { get; set; }
         private StructureSet CopiedSS { get; set; }
         private ExternalPlanSetup Plan { get; set; }
 
-        #endregion
+
     }
 }
