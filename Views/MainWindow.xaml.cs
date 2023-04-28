@@ -1,4 +1,5 @@
 ﻿using MAAS_BreastPlan_helper;
+using MAAS_BreastPlan_helper.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,8 +28,8 @@ namespace MAAS_BreastPlan_helper
         public MainWindow(ScriptContext context)
         {
             InitializeComponent();
-            EthosAutoBeamTab.Content = new EthosBeamDialog(context);
-            TangAutoPlanTab.Content = new BreastAutoDialog(context);
+            //EthosAutoBeamTab.Content = new EthosBeamDialog() { DataContext = new EthosBeamDialogViewModel(context) };
+            TangAutoPlanTab.Content = new BreastAutoDialog() { DataContext = new BreastAutoDialogViewModel(context) };
         }
     }
 }

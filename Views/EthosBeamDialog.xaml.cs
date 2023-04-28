@@ -32,11 +32,9 @@ namespace MAAS_BreastPlan_helper
 
         public TextBoxOutputter outputter;
 
-        public EthosBeamDialog(ScriptContext context)
+        public EthosBeamDialog()
         {
             InitializeComponent();
-            vm = new EthosBeamDialogViewModel(context);
-            DataContext = vm;
         }
 
         void TimerTick(object state)
