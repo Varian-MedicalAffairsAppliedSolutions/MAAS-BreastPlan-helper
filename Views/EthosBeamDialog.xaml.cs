@@ -20,7 +20,7 @@ using NLog;
 using System.Net.NetworkInformation;
 using System.ComponentModel;
  
-namespace MAAS_BreastPlan_helper
+namespace MAAS_BreastPlan_helper.Views
 {
     /// <summary>
     /// Interaction logic for EthosBeamDialog.xaml

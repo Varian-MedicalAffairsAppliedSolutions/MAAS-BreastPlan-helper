@@ -16,7 +16,7 @@ using System.Windows.Shapes;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 
-namespace MAAS_BreastPlan_helper
+namespace MAAS_BreastPlan_helper.Views
 {
     /// <summary>
     /// Interaction logic for BreastAutoDialog.xaml

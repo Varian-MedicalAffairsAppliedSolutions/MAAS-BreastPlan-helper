@@ -1,6 +1,7 @@
 ﻿using MAAS_BreastPlan_helper;
 using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 using MAAS_BreastPlan_helper.ViewModels;
+using MAAS_BreastPlan_helper.Views;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace MAAS_BreastPlan_helper
     /// Interaction logic for Window1.xaml
     /// </summary>
     /// 
-   
+
     // TODO: make second tab the default
     public partial class MainWindow : Window
     {
@@ -31,6 +32,7 @@ namespace MAAS_BreastPlan_helper
             InitializeComponent();
             EthosAutoBeamTab.Content = new EthosBeamDialog() { DataContext = new EthosBeamDialogViewModel(context) };
             TangAutoPlanTab.Content = new BreastAutoDialog() { DataContext = new BreastAutoDialogViewModel(context, settings) };
+            Auto3DSWTab.Content = new Auto3dSlidingWindow() { DataContext = new Auto3dSlidingWindowViewModel(context, settings) };
         }
     }
 }
