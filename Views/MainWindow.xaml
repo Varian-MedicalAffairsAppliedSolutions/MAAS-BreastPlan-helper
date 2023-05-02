@@ -13,6 +13,7 @@
                 <RowDefinition Height="Auto"></RowDefinition>
             </Grid.RowDefinitions>
             <TabControl>
+                <TabItem Name="Auto3DSWTab" Header="Auto 3D Sliding Window"/>
                 <TabItem Name="TangAutoPlanTab" Header="Tangential Auto Plan"/>
                 <TabItem Name="EthosAutoBeamTab" Header="Multi Field Beam Placement" />
             </TabControl>

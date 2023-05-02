@@ -151,7 +151,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\TextBlockOutputter.cs" />
+    <Compile Include="Models\Utils.cs" />
+    <Compile Include="ViewModels\Auto3dSlidingWindowViewModel.cs" />
     <Compile Include="ViewModels\BreastAutoDialogViewModel.cs" />
+    <Compile Include="Views\Auto3dSlidingWindow.xaml.cs">
+      <DependentUpon>Auto3dSlidingWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\BreastAutoDialog.xaml.cs">
       <DependentUpon>BreastAutoDialog.xaml</DependentUpon>
     </Compile>
@@ -174,6 +179,10 @@
     <Compile Include="Models\SettingsClass.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Views\Auto3dSlidingWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\BreastAutoDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
