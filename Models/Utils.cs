@@ -66,7 +66,7 @@ namespace MAAS_BreastPlan_helper.Models
         public static void SpareLungHeart(Structure ptv, Structure ipsi_lung, Structure heart, StructureSet ss)
         {
             //Create a temp structure with 5mm outer matrgins to exclude any overlap between PTV and ipsi lateral lung for planning. 
-            Structure ipsiL_placeholder = ss.AddStructure("DOSE_REGION", "ipsi_Ls");
+            Structure ipsiL_placeholder = ss.AddStructure("DOSE_REGION", "__ipsi_Ls");
             var margins_ipsi = new AxisAlignedMargins(StructureMarginGeometry.Outer, 5, 5, 5, 5, 5, 5);
             ipsiL_placeholder.SegmentVolume = ipsi_lung.AsymmetricMargin(margins_ipsi);
 
@@ -75,7 +75,7 @@ namespace MAAS_BreastPlan_helper.Models
             ss.RemoveStructure(ipsiL_placeholder);
 
             //Create a temp structure with 5mm outer matrgins to exclude any overlap between PTV and heart for planning. 
-            Structure heart_placeholder = ss.AddStructure("DOSE_REGION", "heart_PH");
+            Structure heart_placeholder = ss.AddStructure("DOSE_REGION", "__heart_PH");
             var margins_heart = new AxisAlignedMargins(StructureMarginGeometry.Outer, 5, 5, 5, 5, 5, 5);
             heart_placeholder.SegmentVolume = heart.AsymmetricMargin(margins_heart);
 

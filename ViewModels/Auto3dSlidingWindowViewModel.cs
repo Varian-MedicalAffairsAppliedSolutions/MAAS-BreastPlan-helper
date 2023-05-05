@@ -465,8 +465,9 @@ namespace MAAS_BreastPlan_helper.ViewModels
             optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
             optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
 
-            NewPlan.CalculateLeafMotions();
-            NewPlan.CalculateDose();
+            //NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
+            //NewPlan.CalculateLeafMotions();
+            //NewPlan.CalculateDose();
 
             if (Settings.Cleanup)
             {
