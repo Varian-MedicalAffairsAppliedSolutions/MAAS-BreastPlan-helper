@@ -13,6 +13,9 @@ using VMS.TPS.Common.Model.Types;
 using Prism.Logging;
 using System.Collections.ObjectModel;
 using Prism.Commands;
+using static VMS.TPS.Common.Model.Types.DoseValue;
+using System.Security.Cryptography;
+using System.Xml;
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
@@ -100,11 +103,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             
         }
 
-        public async void OnCreateBreastPlan()
+        public void OnCreateBreastPlan()
         {
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
             int nrBeams = Beams.Count();
-            await UpdateListBox("Starting...");
+            //await UpdateListBox("Starting...");
             if (nrBeams != 2)
             {
                 throw new Exception($"Must have 2 beams but got {nrBeams}");
@@ -138,7 +141,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 throw new Exception($"Beam weights don't sum to 1: {weightSum}");
             }
 
-            await UpdateListBox("All checks passed, copying to new plan");
+            //await UpdateListBox("All checks passed, copying to new plan");
 
             // Copy plan and set new name
             var NewPlan = Context.Course.CopyPlanSetup(Plan) as ExternalPlanSetup;
@@ -149,7 +152,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, Plan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
             //await UpdateListBox($"Set opt model");
 
-            await UpdateListBox($"New plan created with id {NewPlan.Id}");
+            //await UpdateListBox($"New plan created with id {NewPlan.Id}");
 
             // Check if there is a PTV
             var CopiedSS = NewPlan.StructureSet;
@@ -159,52 +162,59 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             //await UpdateListBox($"Tried to find PTV and Body");
 
-            
+
 
             //await UpdateListBox($"Sparing heart and lung {NewPlan.Id}");
 
             //DoseValue renormPTV = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
-            
-            
+
+
+            // Perform dose calc
+            NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
+            NewPlan.CalculateDose();
+            NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
+
+            //await UpdateListBox($"Set norm value");
             var maxBodyDose = Plan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
             NewPlan.PlanNormalizationValue = maxBodyDose.Dose;
 
-            //await UpdateListBox($"Set norm value");
-
-            // Perform dose calc
-            if (NewPlan.Dose == null)
-            {
-                NewPlan.CalculateDose();
-            }
+            var DM3D = NewPlan.Dose.DoseMax3D;
+            //await UpdateListBox($"Dose max of newplan and plan = {NewPlan.Dose.DoseMax3D} | {Plan.Dose.DoseMax3D}");
             //await UpdateListBox($"Dose is calculated");
 
-            // Create 50% IDL structure as PTV_OPT if PTV not selected
+            
 
+            // Create 50% IDL structure as PTV_OPT if PTV not selected
             Structure PTV_OPT = CopiedSS.AddStructure("DOSE_REGION", "PTV_OPT");
-            await UpdateListBox($"PTV_OPT created");
-            PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseValue.DoseUnit.Percent));
-            await UpdateListBox($"PTV_OPT converted with vol = {PTV_OPT.Volume}");
+            //await UpdateListBox($"PTV_OPT created");
+            PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseUnit.Percent));
+            //await UpdateListBox($"PTV_OPT converted with vol = {PTV_OPT.Volume}");
+
+            //TODO: create 95, 85, 80, 75 IDL structs
+
+
+            // Create 90% IDL structure
+            Structure IDL90 = CopiedSS.AddStructure("DOSE_REGION", "IDL90");
+            //await UpdateListBox($"IDL90 created");
+            IDL90.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(90, DoseUnit.Percent));
+            //await UpdateListBox($"IDL90 seg vol set = {IDL90.Volume} CC");
 
             // Apply margin 
             var margin = new AxisAlignedMargins(StructureMarginGeometry.Inner, 5, 5, 5, 5, 5, 5);
-            await UpdateListBox($"created margin");
+            //await UpdateListBox($"created margin");
             PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
-            await UpdateListBox($"changed ptv seg vol");
+            //await UpdateListBox($"changed ptv seg vol");
 
             // Spare heart and lung on PTV
             Utils.SpareLungHeart(PTV_OPT, ipsi_lung, Heart, CopiedSS);
 
-            await UpdateListBox($"PTV_OPT Vol = {PTV_OPT.Volume}");
+            //await UpdateListBox($"PTV_OPT Vol = {PTV_OPT.Volume}");
 
-            // Create 90% IDL structure
-            Structure IDL90= CopiedSS.AddStructure("DOSE_REGION", "IDL90");
-            await UpdateListBox($"IDL90 created");
-            IDL90.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(90, DoseValue.DoseUnit.Percent));
-            await UpdateListBox($"IDL90 seg vol set");
+            
 
             // Apply margin again
             IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
-            await UpdateListBox($"IDL90 add asym margin");
+            //await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume} CC");
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -213,44 +223,82 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
 
-            await UpdateListBox($"optOptions created");
+            //await UpdateListBox($"optOptions created");
+
+            var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
+            string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
+            string energy_mode_id = unpack_getFluenceEnergyMode.Item2;
+
+            var machineParameters = new ExternalBeamMachineParameters(
+                Plan.Beams.First().TreatmentUnit.Id,
+                energy_mode_id,
+                Plan.Beams.First().DoseRate,
+                "STATIC",
+                primary_fluence_mode
+            );
+
+            // Delete copied beams in new plan
+            foreach (var nb in NewPlan.Beams.Where(b => !b.IsSetupField).ToList())
+            {
+                if (!nb.IsSetupField)
+                {
+                    NewPlan.RemoveBeam(nb);
+                }
+            }
+
+            foreach(var bm in Plan.Beams.Where(b => !b.IsSetupField).ToList())
+            {
+                //  beam is a not a setup field 
+                Beam Temp = NewPlan.AddStaticBeam(
+                    machineParameters,
+                    bm.ControlPoints[0].JawPositions,
+                    bm.ControlPoints[0].CollimatorAngle,
+                    bm.ControlPoints[0].GantryAngle,
+                    bm.ControlPoints[0].PatientSupportAngle,
+                    bm.IsocenterPosition
+                    );
+                Temp.Id = bm.Id;
+            }
+            
 
             
 
             // Get optimization setup
             var optSet = NewPlan.OptimizationSetup;
-            await UpdateListBox($"Got old opt setup");
-
+            //await UpdateListBox($"Got old opt setup");
+            
             var RxDose = Plan.TotalDose;
 
             // Add all objectives
             // -- PTV_OPT --: 
             // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
-            await UpdateListBox($"Added 1");
+            //await UpdateListBox($"Added 1");
             // - Upper 30 % Volume, 103 % Rx Dose – Priority 110
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 30, 110);
-            await UpdateListBox($"Added 2");
+            //await UpdateListBox($"Added 2");
             // - Lower 95 % Volume, 100 % Rx Dose – Priority 135
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(RxDose.Dose, RxDose.Unit), 95, 135);
-            await UpdateListBox($"Added 3");
+            //await UpdateListBox($"Added 3");
             // - Lower 99.9 % Volume, 95 % Rx Dose – Priority 130
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(0.95 * RxDose.Dose, RxDose.Unit), 99.9, 130);
-            await UpdateListBox($"Added 4");
+            //await UpdateListBox($"Added 4");
             // -- Body --
             // - Upper 0 % Volume, 108 % Rx Dose – Priority 200
             optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(1.08 * RxDose.Dose, RxDose.Unit), 0, 200);
-            await UpdateListBox($"Added 5");
+            //await UpdateListBox($"Added 5");
             // -- 90 % IDL structure --
             // - Upper 5 % Volume, 103 % Rx Dose – Priority 140
             optSet.AddPointObjective(IDL90, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 5, 140);
-            await UpdateListBox($"Added 6");
+            //await UpdateListBox($"Added 6");
 
             // Optimize
             NewPlan.Optimize(opt);
-            await UpdateListBox($"Finished opt");
+            //await UpdateListBox($"Finished opt");
 
-
+            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, "Varian Leaf Motion Calculator [15.6.06]");
+            NewPlan.CalculateLeafMotions();
+            
 
         }
 
