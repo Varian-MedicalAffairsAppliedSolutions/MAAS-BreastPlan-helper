@@ -16,6 +16,16 @@ using Prism.Commands;
 using static VMS.TPS.Common.Model.Types.DoseValue;
 using System.Security.Cryptography;
 using System.Xml;
+using static MAAS_BreastPlan_helper.Models.Utils;
+using static MAAS_BreastPlan_helper.ViewModels.BreastAutoDialogViewModel;
+using System.Runtime.CompilerServices;
+
+// Anthony Note fix
+// Separation based IDL50 instead of isocenter (look at interesection between 50% idl and skin
+// Switch Y/N --> OK/Cancel
+
+
+// Prescription, 
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
@@ -24,7 +34,56 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private ScriptContext Context { get; set; }
         private SettingsClass Settings { get; set; }
         private Patient Patient { get; set; }   
-        private ExternalPlanSetup Plan { get; set; }
+        //private ExternalPlanSetup Plan { get; set; }
+        private ExternalPlanSetup plan;
+        
+        private bool customPTV;
+
+        public bool CustomPTV
+        {
+            get { return customPTV; }
+            set { SetProperty(ref customPTV, value); }
+        }
+
+        private bool cboPTVEnabled;
+
+        public bool CBOPTVEnabled
+        {
+            get { return cboPTVEnabled; }
+            set { SetProperty(ref cboPTVEnabled, value); }
+        }
+
+        private bool lblPTVEnabled;
+
+        public bool LBLPTVEnabled
+        {
+            get { return lblPTVEnabled; }
+            set { SetProperty(ref lblPTVEnabled, value); }
+        }
+
+
+        public ExternalPlanSetup Plan
+        {
+            get { return plan; }
+            set { SetProperty(ref plan, value); }
+        }
+
+        private string selectedEnergy;
+        public string SelectedEnergy
+        {
+            get { return selectedEnergy; }
+            set { SetProperty(ref selectedEnergy, value); }
+        }
+
+        public ObservableCollection<SIDE> BreastSides { get; set; }
+        private SIDE selectedBreastSide;
+
+        public SIDE SelectedBreastSide
+        {
+            get { return selectedBreastSide; }
+            set { SetProperty(ref selectedBreastSide, value); }
+        }
+
 
         public ObservableCollection<string> StatusBoxItems { get; set; }
 
@@ -39,7 +98,27 @@ namespace MAAS_BreastPlan_helper.ViewModels
             set { SetProperty(ref ipsi_lung, value); }
         }
 
+        public ObservableCollection<Structure> PTVItems { get; set; }
+        private Structure selectedPTV;
+
+        public Structure SelectedPTV
+        {
+            get { return selectedPTV; }
+            set { SetProperty(ref selectedPTV, value); }
+        }
+
+
         public ObservableCollection<Structure> LungStructures { get; set; }
+
+        private string lmcText;
+
+        public string LMCText
+        {
+            get { return lmcText; }
+            set { SetProperty(ref lmcText, value); }
+        }
+
+        public DelegateCommand CbCustomPTV_Click { get; set; }
 
 
         // -- Heart stuff --
@@ -87,20 +166,66 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var lHeartStructures = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("heart")).ToList();
             HeartStructures = new ObservableCollection<Structure>();
             foreach (var structure in lHeartStructures) { HeartStructures.Add(structure); }
+            Heart = HeartStructures.FirstOrDefault();
+
+            BreastSides = new ObservableCollection<SIDE>() { SIDE.RIGHT, SIDE.LEFT };
+            SelectedBreastSide = FindTreatmentSide(Plan); ;
 
             var lLungStructures = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("lung")).ToList();
             LungStructures = new ObservableCollection<Structure>();
             foreach (var strucuture in lLungStructures) { LungStructures.Add(strucuture); }
+            Ipsi_lung = LungStructures.FirstOrDefault();
+
+            if (SelectedBreastSide == SIDE.LEFT)
+            {
+                var lung_candidates = LungStructures.Where(s => s.Id.ToLower().Contains("left")).ToList().Concat(LungStructures.Where(s => s.Id.ToLower().Contains("lt")).ToList());// + LungStructures.Where(s => s.Id.ToLower().Contains("left")).ToList();
+                if (lung_candidates.Count() > 0)
+                {
+                    Ipsi_lung = lung_candidates.FirstOrDefault();
+                }
+            }
+
             
-      
-            //SIDE Side = FindTreatmentSide(Plan);
-            
+            SelectedEnergy = Utils.GetFluenceEnergyMode(Plan.Beams.Where(b => !b.IsSetupField).First()).Item2;
+
+            LMCText = settings.LMCModel;
+
+            PTVItems = new ObservableCollection<Structure>();
+            foreach(var s in Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("ptv")))
+            {
+                PTVItems.Add(s);
+            }
+
+            // Initialize Custom ptv chekbox to false
+            CustomPTV = false;
+            LBLPTVEnabled = false;
+            CBOPTVEnabled = false;
+
+            CbCustomPTV_Click = new DelegateCommand(OnCustomPTV_Click);
+
 
             // Pick:
             // 1. Breast side,
             // 2. Ipsilateral lung,
             // 3. Select heart
-            
+
+        }
+
+        private void OnCustomPTV_Click()
+        {
+            if (customPTV)
+            {
+                CBOPTVEnabled = true;
+                LBLPTVEnabled = true;
+                SelectedPTV = PTVItems.FirstOrDefault();
+
+            }
+            else
+            {
+                CBOPTVEnabled = false;
+                LBLPTVEnabled = false;
+                SelectedPTV = null;
+            }
         }
 
         public void OnCreateBreastPlan()
@@ -182,14 +307,36 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //await UpdateListBox($"Dose max of newplan and plan = {NewPlan.Dose.DoseMax3D} | {Plan.Dose.DoseMax3D}");
             //await UpdateListBox($"Dose is calculated");
 
-            
 
-            // Create 50% IDL structure as PTV_OPT if PTV not selected
+            // Remove ptvOPt if exists
+            var oldOpt = CopiedSS.Structures.Where(x => x.Id == "PTV_OPT").ToList().FirstOrDefault();
+            if (oldOpt != null) { CopiedSS.RemoveStructure(oldOpt); }
+
+            // Remove IDL90 if exists
+            var old90 = CopiedSS.Structures.Where(x => x.Id == "IDL90").ToList().FirstOrDefault();
+            if (old90 != null) { CopiedSS.RemoveStructure(old90); }
+
             Structure PTV_OPT = CopiedSS.AddStructure("DOSE_REGION", "PTV_OPT");
-            //await UpdateListBox($"PTV_OPT created");
-            PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseUnit.Percent));
-            //await UpdateListBox($"PTV_OPT converted with vol = {PTV_OPT.Volume}");
+            var margin = new AxisAlignedMargins(StructureMarginGeometry.Inner, 5, 5, 5, 5, 5, 5);
 
+            if (!CustomPTV)
+            {
+                // Create 50% IDL structure as PTV_OPT if PTV not selected 
+                //await UpdateListBox($"PTV_OPT created");
+                PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseUnit.Percent));
+                PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
+            }
+
+            else
+            {
+                PTV_OPT.SegmentVolume = SelectedPTV.SegmentVolume;
+            }
+            
+           
+            if (PTV_OPT.Volume < 0.0001)
+            {
+                throw new Exception($"Structure volume of PTV opt is too low: {PTV_OPT.Volume} CC");
+            }
             //TODO: create 95, 85, 80, 75 IDL structs
 
 
@@ -197,20 +344,9 @@ namespace MAAS_BreastPlan_helper.ViewModels
             Structure IDL90 = CopiedSS.AddStructure("DOSE_REGION", "IDL90");
             //await UpdateListBox($"IDL90 created");
             IDL90.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(90, DoseUnit.Percent));
-            //await UpdateListBox($"IDL90 seg vol set = {IDL90.Volume} CC");
-
-            // Apply margin 
-            var margin = new AxisAlignedMargins(StructureMarginGeometry.Inner, 5, 5, 5, 5, 5, 5);
-            //await UpdateListBox($"created margin");
-            PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
-            //await UpdateListBox($"changed ptv seg vol");
 
             // Spare heart and lung on PTV
-            Utils.SpareLungHeart(PTV_OPT, ipsi_lung, Heart, CopiedSS);
-
-            //await UpdateListBox($"PTV_OPT Vol = {PTV_OPT.Volume}");
-
-            
+            Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
 
             // Apply margin again
             IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
@@ -261,8 +397,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             }
             
 
-            
-
             // Get optimization setup
             var optSet = NewPlan.OptimizationSetup;
             //await UpdateListBox($"Got old opt setup");
@@ -296,8 +430,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.Optimize(opt);
             //await UpdateListBox($"Finished opt");
 
-            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, "Varian Leaf Motion Calculator [15.6.06]");
+            // Remove the ptv opt
+            CopiedSS.RemoveStructure(PTV_OPT);
+            CopiedSS.RemoveStructure(IDL90);
+
+            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
             NewPlan.CalculateLeafMotions();
+
+            NewPlan.CalculateDose();
             
 
         }

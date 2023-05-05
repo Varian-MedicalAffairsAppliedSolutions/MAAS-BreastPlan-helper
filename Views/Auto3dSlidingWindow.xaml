@@ -58,6 +58,7 @@
                         </Style>
                     </ComboBox.Resources>
                 </ComboBox-->
+                <TextBlock Text="{Binding Plan}" Grid.Column="2" Grid.Row="1" Margin="5,10,5,10"></TextBlock>
 
                 <ComboBox ItemsSource="{Binding BreastSides}" SelectedItem="{Binding SelectedBreastSide}" Grid.Column="2" Grid.Row="2" Margin="5,10,5,10" IsReadOnly="True" >
                     <ComboBox.Resources>
@@ -81,13 +82,14 @@
                     </ComboBox.Resources>
                 </ComboBox>
                 
-                <ComboBox ItemsSource="{Binding Energies}" SelectedItem="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="7" IsReadOnly="True" Margin="5,10,5,10" Width="185" >
+                <!--ComboBox ItemsSource="{Binding Energies}" SelectedItem="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="7" IsReadOnly="True" Margin="5,10,5,10" Width="185" >
                     <ComboBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="3"/>
                         </Style>
                     </ComboBox.Resources>
-                </ComboBox>
+                </ComboBox-->
+                <TextBlock Text="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="7" Margin="5,10,5,10"></TextBlock>
 
                 <TextBox  Grid.Column="2" Grid.Row="8" Text="{Binding LMCText}">
 
@@ -160,7 +162,7 @@
                     </Grid.RowDefinitions>
                     <CheckBox IsChecked="{Binding CustomPTV}" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" VerticalContentAlignment="Center" Content="Use Customized PTV"  Command="{Binding CbCustomPTV_Click}"/>
                     <Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold"/>
-                    <ComboBox IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" Grid.Column="1" Grid.Row="1" IsReadOnly="True" Margin="10">
+                    <ComboBox IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" SelectedItem="{Binding SelectedPTV}" Grid.Column="1" Grid.Row="1" IsReadOnly="True" Margin="10">
                         <ComboBox.Resources>
                             <Style TargetType="{x:Type Border}">
                                 <Setter Property="CornerRadius" Value="3"/>
