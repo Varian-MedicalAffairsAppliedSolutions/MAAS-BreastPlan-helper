@@ -7,5 +7,5 @@
   "ColdSpotIDL": 100,
   "HotSpotIDL": 105,
   "SecondOpt": true,
-  "Cleanup": true
+  "Cleanup": false
 }

@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 // Anthony Note fix
 // Separation based IDL50 instead of isocenter (look at interesection between 50% idl and skin
 // Switch Y/N --> OK/Cancel
+// Field sep and output on monday
 
 
 // Prescription, 
@@ -465,9 +466,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
             optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
 
-            //NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            //NewPlan.CalculateLeafMotions();
-            //NewPlan.CalculateDose();
+            NewPlan.Optimize(opt);
+
+            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
+            NewPlan.CalculateLeafMotions();
+            NewPlan.CalculateDose();
 
             if (Settings.Cleanup)
             {
