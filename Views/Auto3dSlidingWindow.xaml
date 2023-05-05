@@ -11,7 +11,7 @@
 
         <!--#region Main Body-->
 
-        <Border Margin="10" BorderBrush="Green" BorderThickness="4">
+        <Border Margin="10" BorderBrush="Transparent" BorderThickness="4">
             <Grid RenderTransformOrigin="0.313,0.134" Margin="10,10,10,0" Background="White">
 
                 <!--#region Row/Column Defs-->
@@ -33,6 +33,7 @@
                     <RowDefinition/>
                     <RowDefinition/>
                     <RowDefinition/>
+                    <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
 
                 <!--#endregion-->
@@ -125,7 +126,7 @@
 
                 <!--#region Labels-->
 
-                <Label x:Name="lblPatId" Content="Patient ID:" Grid.Column="0" Grid.Row="0" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <!--Label x:Name="lblPatId" Content="Patient ID:" Grid.Column="0" Grid.Row="0" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" /-->
                 <Label Content="{Binding SelectedPatientId}" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,0,0,0" Padding="10,0,30,3" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"  FontWeight="Bold" Background="#FFAA4545" Foreground="White"/>
                 <Label x:Name="lblPlanId" Content="Original Plan ID:" Grid.Column="1" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
                 <Label x:Name="lblBreastSide" Content="Breast Side:" Grid.Column="1" Grid.Row="2" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
@@ -150,7 +151,7 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Border Grid.Column="1" Grid.ColumnSpan="2" BorderBrush="Green" BorderThickness="2" Margin="10" Padding="0">
+            <Border Grid.Column="1" Grid.ColumnSpan="2" BorderBrush="Transparent" BorderThickness="2" Margin="10" Padding="0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*"/>
@@ -159,6 +160,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                         <RowDefinition/>
+                        <RowDefinition></RowDefinition>
                     </Grid.RowDefinitions>
                     <CheckBox IsChecked="{Binding CustomPTV}" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" VerticalContentAlignment="Center" Content="Use Customized PTV"  Command="{Binding CbCustomPTV_Click}"/>
                     <Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold"/>
@@ -169,6 +171,8 @@
                             </Style>
                         </ComboBox.Resources>
                     </ComboBox>
+                    <Label Content="Approx Max Dose (%)" FontWeight="ExtraBold" Grid.Column="0" Grid.Row="2"></Label>
+                    <TextBox Text="{Binding MaxDoseGoal}" IsReadOnly="false" Grid.Column="1" Grid.Row="2"></TextBox>
                 </Grid>
             </Border>
         </Grid>

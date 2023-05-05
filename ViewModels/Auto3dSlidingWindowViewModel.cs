@@ -84,6 +84,15 @@ namespace MAAS_BreastPlan_helper.ViewModels
             set { SetProperty(ref selectedBreastSide, value); }
         }
 
+        private double maxDoseGoal;
+
+        public double MaxDoseGoal
+        {
+            get { return maxDoseGoal; }
+            set { SetProperty(ref maxDoseGoal, value); }
+        }
+
+
 
         public ObservableCollection<string> StatusBoxItems { get; set; }
 
@@ -185,6 +194,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 }
             }
 
+            MaxDoseGoal = settings.MaxDoseGoal;
             
             SelectedEnergy = Utils.GetFluenceEnergyMode(Plan.Beams.Where(b => !b.IsSetupField).First()).Item2;
 
@@ -308,15 +318,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //await UpdateListBox($"Dose is calculated");
 
 
-            // Remove ptvOPt if exists
-            var oldOpt = CopiedSS.Structures.Where(x => x.Id == "PTV_OPT").ToList().FirstOrDefault();
-            if (oldOpt != null) { CopiedSS.RemoveStructure(oldOpt); }
+            // Delete existing opt structures
+            var optStructsOld = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
+            foreach (var os in optStructsOld) { CopiedSS.RemoveStructure(os); }
 
-            // Remove IDL90 if exists
-            var old90 = CopiedSS.Structures.Where(x => x.Id == "IDL90").ToList().FirstOrDefault();
-            if (old90 != null) { CopiedSS.RemoveStructure(old90); }
-
-            Structure PTV_OPT = CopiedSS.AddStructure("DOSE_REGION", "PTV_OPT");
+            Structure PTV_OPT = CopiedSS.AddStructure("DOSE_REGION", "__PTV_OPT");
             var margin = new AxisAlignedMargins(StructureMarginGeometry.Inner, 5, 5, 5, 5, 5, 5);
 
             if (!CustomPTV)
@@ -331,8 +337,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             {
                 PTV_OPT.SegmentVolume = SelectedPTV.SegmentVolume;
             }
-            
-           
+
+
             if (PTV_OPT.Volume < 0.0001)
             {
                 throw new Exception($"Structure volume of PTV opt is too low: {PTV_OPT.Volume} CC");
@@ -341,7 +347,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
 
             // Create 90% IDL structure
-            Structure IDL90 = CopiedSS.AddStructure("DOSE_REGION", "IDL90");
+            Structure IDL90 = CopiedSS.AddStructure("DOSE_REGION", "__IDL90");
             //await UpdateListBox($"IDL90 created");
             IDL90.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(90, DoseUnit.Percent));
 
@@ -382,7 +388,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 }
             }
 
-            foreach(var bm in Plan.Beams.Where(b => !b.IsSetupField).ToList())
+            foreach (var bm in Plan.Beams.Where(b => !b.IsSetupField).ToList())
             {
                 //  beam is a not a setup field 
                 Beam Temp = NewPlan.AddStaticBeam(
@@ -395,12 +401,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     );
                 Temp.Id = bm.Id;
             }
-            
+
 
             // Get optimization setup
             var optSet = NewPlan.OptimizationSetup;
             //await UpdateListBox($"Got old opt setup");
-            
+
             var RxDose = Plan.TotalDose;
 
             // Add all objectives
@@ -419,7 +425,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //await UpdateListBox($"Added 4");
             // -- Body --
             // - Upper 0 % Volume, 108 % Rx Dose – Priority 200
-            optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(1.08 * RxDose.Dose, RxDose.Unit), 0, 200);
+            optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal / 100) - 0.01) * RxDose.Dose, RxDose.Unit), 0, 200);
             //await UpdateListBox($"Added 5");
             // -- 90 % IDL structure --
             // - Upper 5 % Volume, 103 % Rx Dose – Priority 140
@@ -431,22 +437,44 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //await UpdateListBox($"Finished opt");
 
             // Remove the ptv opt
-            CopiedSS.RemoveStructure(PTV_OPT);
-            CopiedSS.RemoveStructure(IDL90);
+            //CopiedSS.RemoveStructure(PTV_OPT);
+            //CopiedSS.RemoveStructure(IDL90);
 
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
             NewPlan.CalculateLeafMotions();
 
             NewPlan.CalculateDose();
-            
 
+            if (!Settings.SecondOpt)
+            {
+                return;
+            }
+
+            // Create hot and cold spotes
+            Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
+            coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
+            coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
+
+            Structure hotSpot = CopiedSS.AddStructure("DOSE_REGION", "__hotSpot");
+            hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent));
+
+            // Add objectives for hot and cold spot
+            //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
+
+            var RxDose_ = Plan.TotalDose;
+            optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
+            optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
+
+            NewPlan.CalculateLeafMotions();
+            NewPlan.CalculateDose();
+
+            if (Settings.Cleanup)
+            {
+                var optStructs = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
+                foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
+            }
         }
 
-        private async Task UpdateListBox(string s)
-        {
-            StatusBoxItems.Add(s);
-            //statusBox.ScrollIntoView(s);
-            await Task.Delay(1);
-        }
+        
     }
 }

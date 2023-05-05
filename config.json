@@ -2,5 +2,10 @@
   "Debug": false,
   "Validated": false,
   "EULAAgreed": false,
-  "LMCModel": "Varian Leaf Motion Calculator [15.6.06]"
+  "LMCModel": "Varian Leaf Motion Calculator [15.6.06]",
+  "MaxDoseGoal": 108.0,
+  "ColdSpotIDL": 100,
+  "HotSpotIDL": 105,
+  "SecondOpt": true,
+  "Cleanup": true
 }

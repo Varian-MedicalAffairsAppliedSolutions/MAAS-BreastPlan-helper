@@ -14,7 +14,15 @@ namespace MAAS_BreastPlan_helper
             public bool Validated { get; set; }
             public bool EULAAgreed { get; set; }
 
+            public double HotSpotIDL { get; set; }
+            public double ColdSpotIDL { get; set; }
+            public bool SecondOpt { get; set; }
+
             public string LMCModel { get; set; }
+
+            public bool Cleanup { get; set; }
+
+            public double MaxDoseGoal { get; set; }
         }
     }
 }
