@@ -19,14 +19,20 @@ using System.Xml;
 using static MAAS_BreastPlan_helper.Models.Utils;
 using static MAAS_BreastPlan_helper.ViewModels.BreastAutoDialogViewModel;
 using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
+using MAAS_BreastPlan_helper.Properties;
+using System.IO;
 
 // Anthony Note fix
-// Separation based IDL50 instead of isocenter (look at interesection between 50% idl and skin
-// Switch Y/N --> OK/Cancel
-// Field sep and output on monday
+
+// TODO
+// 2. get field separation
+    // 1. At beam isocenter 
+    // 2. At beam edge iso plane
+    // 3. At beam edge Dmax plane after optimization 
+// 3. Display PTV volume (at end for script generated PTV)
 
 
-// Prescription, 
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
@@ -74,6 +80,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
         {
             get { return selectedEnergy; }
             set { SetProperty(ref selectedEnergy, value); }
+        }
+
+        private double separation;
+        public double Separation
+        {
+            get { return separation; }
+            set { SetProperty(ref separation, value); }
         }
 
         public ObservableCollection<SIDE> BreastSides { get; set; }
@@ -142,6 +155,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public ObservableCollection<Structure> HeartStructures { get; set; }
 
+        private string JsonPath { get; set; }  // Path to config file
 
         /// <summary>
         /// Determine breast side based on isocenter coordinates
@@ -149,10 +163,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
         /// <param name="plan">The treatment plan.</param>
         /// <returns>The element of the SIDE enum representing the treatment side.</returns>
 
-        public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings) 
+        public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path) 
         {
             Context = context;
             Settings = settings;
+            JsonPath = json_path;
 
             Patient = Context.Patient;
             Patient.BeginModifications();
@@ -215,6 +230,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             CbCustomPTV_Click = new DelegateCommand(OnCustomPTV_Click);
 
 
+            var body = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
+            Separation = Utils.ComputeBeamSeparationWholeField(Plan.Beams.First(), Plan.Beams.Last(), body);
             // Pick:
             // 1. Breast side,
             // 2. Ipsilateral lung,
@@ -241,6 +258,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public void OnCreateBreastPlan()
         {
+            // Save some properties back to config
+            // LMC
+            Settings.HotSpotIDL = MaxDoseGoal;
+            Settings.LMCModel = LMCText;
+            File.WriteAllText(JsonPath, JsonConvert.SerializeObject(Settings));
+
+
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
             int nrBeams = Beams.Count();
             //await UpdateListBox("Starting...");
@@ -344,14 +368,24 @@ namespace MAAS_BreastPlan_helper.ViewModels
             {
                 throw new Exception($"Structure volume of PTV opt is too low: {PTV_OPT.Volume} CC");
             }
-            //TODO: create 95, 85, 80, 75 IDL structs
 
+            // Create 70 - 95% Isodose level structures
+            Structure IDL75 = CopiedSS.AddStructure("DOSE_REGION", "__IDL75");
+            IDL75.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(75, DoseUnit.Percent));
 
-            // Create 90% IDL structure
-            Structure IDL90 = CopiedSS.AddStructure("DOSE_REGION", "__IDL90");
-            //await UpdateListBox($"IDL90 created");
+            Structure IDL80 = CopiedSS.AddStructure("DOSE_REGION", "__IDL80");
+            IDL80.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(80, DoseUnit.Percent));
+
+            Structure IDL85 = CopiedSS.AddStructure("DOSE_REGION", "__IDL85"); 
+            IDL85.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(85, DoseUnit.Percent));
+
+            Structure IDL90 = CopiedSS.AddStructure("DOSE_REGION", "__IDL90"); 
             IDL90.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(90, DoseUnit.Percent));
 
+            Structure IDL95 = CopiedSS.AddStructure("DOSE_REGION", "__IDL95"); 
+            IDL95.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(95, DoseUnit.Percent));
+
+           
             // Spare heart and lung on PTV
             Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
 
@@ -446,37 +480,37 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             NewPlan.CalculateDose();
 
-            if (!Settings.SecondOpt)
-            {
-                return;
+            if (Settings.SecondOpt)
+            { 
+                // Create hot and cold spotes
+                Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
+                coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
+                coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
+
+                Structure hotSpot = CopiedSS.AddStructure("DOSE_REGION", "__hotSpot");
+                hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent));
+
+                // Add objectives for hot and cold spot
+                //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
+
+                var RxDose_ = Plan.TotalDose;
+                optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
+                optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
+            
+                NewPlan.Optimize(opt);
+         
+                NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
+                NewPlan.CalculateLeafMotions();
+                NewPlan.CalculateDose();
+
+                if (Settings.Cleanup)
+                {
+                    var optStructs = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
+                    foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
+                }
             }
 
-            // Create hot and cold spotes
-            Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
-            coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
-            coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
-
-            Structure hotSpot = CopiedSS.AddStructure("DOSE_REGION", "__hotSpot");
-            hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent));
-
-            // Add objectives for hot and cold spot
-            //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
-
-            var RxDose_ = Plan.TotalDose;
-            optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
-            optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
-
-            NewPlan.Optimize(opt);
-
-            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            NewPlan.CalculateLeafMotions();
-            NewPlan.CalculateDose();
-
-            if (Settings.Cleanup)
-            {
-                var optStructs = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
-                foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
-            }
+            MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
         }
 
         

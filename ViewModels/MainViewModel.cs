@@ -42,7 +42,7 @@ namespace MAAS_BreastPlan_helper
         }
 
 
-        public MainViewModel(SettingsClass settings)
+        public MainViewModel(SettingsClass settings, string json_path)
         {
             //MessageBox.Show($"Is Debug == {isDebug}");
             //var hlink = new Hyperlink() { NavigateUri = new Uri("http://medicalaffairs.varian.com/download/VarianLUSLA.pdf") };

@@ -82,7 +82,7 @@ namespace VMS.TPS
         // Check expiration date
         if (exp < DateTime.Now && !foundNoExpire)
         {
-            MessageBox.Show("Application has expired. Newer builds with future expiration dates can be found here: https://github.com/Varian-Innovation-Center/MAAS-PlanComplexity");
+            MessageBox.Show("Application has expired. Newer builds with future expiration dates can be found here: https://github.com/Varian-Innovation-Center/MAAS-BreastPlan-helper");
             return;
         }
 
@@ -104,12 +104,12 @@ namespace VMS.TPS
         }
 
         // Display opening msg
-        string msg = $"The current MAAS-SFRThelper application is provided AS IS as a non-clinical, research only tool in evaluation only. The current " +
+        string msg = $"The current MAAS-BreastPlan-helper application is provided AS IS as a non-clinical, research only tool in evaluation only. The current " +
         $"application will only be available until {exp.Date} after which the application will be unavailable. " +
         $"By Clicking 'Yes' you agree that this application will be evaluated and not utilized in providing planning decision support\n\n" +
         $"Newer builds with future expiration dates can be found here: {newBuildURL}\n\n" +
         "See the FAQ for more information on how to remove this pop-up and expiration";
-        var res = MessageBox.Show(msg, "Agreement  ", MessageBoxButton.YesNo);
+        var res = MessageBox.Show(msg, "Agreement  ", MessageBoxButton.OKCancel);
 
         // If they don't agree close window
         if (res == MessageBoxResult.No)
@@ -118,9 +118,9 @@ namespace VMS.TPS
         }
 
 
-        var mainWindow = new MainWindow(context, settings)
+        var mainWindow = new MainWindow(context, settings, json_path)
         {
-            DataContext  = new MainViewModel(settings)
+            DataContext  = new MainViewModel(settings, json_path)
         };
         
         mainWindow.ShowDialog();

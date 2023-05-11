@@ -191,5 +191,87 @@ namespace MAAS_BreastPlan_helper.Models
             }
 
         }
+
+        /// <summary>
+        /// Compute the separation (in mm) between the entry points of two beams to a structure.
+        /// </summary>
+        /// <param name="b1">One of the beams entering the structure.</param>
+        /// <param name="b2">The other beam entering the structure.</param>
+        /// <param name="external">The structure being entered.</param>
+        /// <returns>A double representing the separation distance between the entry points of the two beams.</returns>
+        private double ComputeBeamSeparation(Beam b1, Beam b2, Structure external)
+        {
+            VVector direction1 = DirectionTowardSource(b1);
+            VVector direction2 = DirectionTowardSource(b2);
+            VVector results1 = GetStructureEntryPoint(external, direction1, b1.IsocenterPosition);
+            VVector results2 = GetStructureEntryPoint(external, direction2, b2.IsocenterPosition);
+
+            //  JAK (2023-06-03): this is a much more condensed way to compute the distance of separation.
+            return (results1 - results2).Length;
+        }
+
+        public static double ComputeBeamSeparationWholeField(Beam b1, Beam b2, Structure external)
+        {
+            VVector direction1 = DirectionTowardSource(b1);
+            VVector direction2 = DirectionTowardSource(b2);
+
+            var cp0 = b1.ControlPoints[0];
+            if (cp0.CollimatorAngle > 90)
+            {
+                throw new Exception("Collimator can't be greater than 90 degrees");
+            }
+
+            var p1 = b1.IsocenterPosition;
+            p1.x += b1.ControlPoints.First().JawPositions.X1;
+            
+            var p2 = b2.IsocenterPosition;
+            p2.x += b2.ControlPoints.First().JawPositions.X1;
+
+            VVector results1 = GetStructureEntryPoint(external, direction1, p1);
+            VVector results2 = GetStructureEntryPoint(external, direction2, p2);
+
+            //  JAK (2023-06-03): this is a much more condensed way to compute the distance of separation.
+            return Math.Round((results1 - results2).Length / 10, 2);
+        }
+
+        /// <summary>
+        /// Find the beam direction vector pointing towards the source.
+        /// </summary>
+        /// <param name="beam">The beam to be evaluated.</param>
+        /// <returns>A VVector struct containing the coordinate directions.</returns>
+        public static VVector DirectionTowardSource(Beam beam)
+        {
+            VVector sourceLocation = beam.GetSourceLocation(beam.ControlPoints.First().GantryAngle);
+            VVector dirVec = sourceLocation - beam.IsocenterPosition;
+            dirVec.ScaleToUnitLength();
+            return dirVec;
+        }
+
+        /// <summary>
+        /// Determine the entry point of a radiation beam into a structure.
+        /// </summary>
+        /// <param name="structure">The structure the beam is entering.</param>
+        /// <param name="direction">The direction VVector of the beam.</param>
+        /// <param name="point">The isocenter position for the beam.</param>
+        /// <returns>A VVector representing the position where the beam enters the structure.</returns>
+        
+
+        
+        public static VVector GetStructureEntryPoint(Structure structure, VVector direction, VVector point)
+        {
+            double stepSizeInmm = 1.0;
+            VVector tDir = direction;
+            tDir.ScaleToUnitLength();
+
+            VVector startPoint = point + tDir * (600 / 2);
+            VVector endPoint = point - tDir * (600 / 2);
+            SegmentProfile profile = structure.GetSegmentProfile(startPoint, endPoint, new System.Collections.BitArray((int)Math.Ceiling((endPoint - startPoint).Length / stepSizeInmm)));
+
+            startPoint = profile.First(spp => spp.Value == true).Position;
+            //endPoint = profile.Last(spp => spp.Value == true).Position;
+
+            return startPoint;
+        }
+
     }
 }

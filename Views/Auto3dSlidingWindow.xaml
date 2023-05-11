@@ -40,7 +40,7 @@
 
                 <!--#region Text Boxes-->
 
-                <TextBox Text="Old Sep Text" Grid.Column="2" Grid.Row="5" Margin="5,10,5,10" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center" IsReadOnly="True"  Background="Green" Foreground="White" Height="33">
+                <TextBox Text="{Binding Separation}" Grid.Column="2" Grid.Row="5" Margin="5,10,5,10" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center" IsReadOnly="True"  Background="Green" Foreground="White" Height="33">
                     <TextBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="3"/>
