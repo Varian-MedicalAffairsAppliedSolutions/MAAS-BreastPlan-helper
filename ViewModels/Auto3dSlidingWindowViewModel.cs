@@ -43,7 +43,31 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private Patient Patient { get; set; }   
         //private ExternalPlanSetup Plan { get; set; }
         private ExternalPlanSetup plan;
-        
+
+        private double sepIso;
+
+        public double SepIso
+        {
+            get { return sepIso; }
+            set { SetProperty(ref sepIso, value); }
+        }
+
+        private double sepIsoEdge;
+
+        public double SepIsoEdge
+        {
+            get { return sepIsoEdge; }
+            set { SetProperty(ref sepIsoEdge, value); }
+        }
+
+        private double sepDmaxEdgeAfterOpt;
+
+        public double SepDmaxEdgeAfterOpt
+        {
+            get { return sepDmaxEdgeAfterOpt; }
+            set { SetProperty(ref sepDmaxEdgeAfterOpt, value); }
+        }
+
         private bool customPTV;
 
         public bool CustomPTV
@@ -82,12 +106,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             set { SetProperty(ref selectedEnergy, value); }
         }
 
-        private double separation;
-        public double Separation
-        {
-            get { return separation; }
-            set { SetProperty(ref separation, value); }
-        }
 
         public ObservableCollection<SIDE> BreastSides { get; set; }
         private SIDE selectedBreastSide;
@@ -165,6 +183,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path) 
         {
+            SepIso = 0;
+            SepIsoEdge = 0;
+            SepDmaxEdgeAfterOpt = 0;
+
             Context = context;
             Settings = settings;
             JsonPath = json_path;
@@ -231,7 +253,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
 
             var body = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
-            Separation = Utils.ComputeBeamSeparationWholeField(Plan.Beams.First(), Plan.Beams.Last(), body);
+
+            SepIso = Utils.ComputeBeamSeparation(Plan.Beams.First(), Plan.Beams.Last(), body); // center of field iso plane
+            SepIsoEdge = Utils.ComputeBeamSeparationWholeField(Plan.Beams.First(), Plan.Beams.Last(), body); // field edge iso plane
+            
             // Pick:
             // 1. Breast side,
             // 2. Ipsilateral lung,
@@ -469,6 +494,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Optimize
             NewPlan.Optimize(opt);
+
+            
             //await UpdateListBox($"Finished opt");
 
             // Remove the ptv opt
@@ -479,6 +506,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.CalculateLeafMotions();
 
             NewPlan.CalculateDose();
+
+            SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, NewPlan.Dose.DoseMax3DLocation.z);
 
             if (Settings.SecondOpt)
             { 

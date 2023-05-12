@@ -19,34 +19,41 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="400"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="85"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition></RowDefinition>
+                    <RowDefinition Height="0*"/>
+                    <RowDefinition Height="23*"/>
+                    <RowDefinition Height="26*"/>
+                    <RowDefinition Height="26*"/>
+                    <RowDefinition Height="26*"/>
+                    <RowDefinition Height="33*"/>
+                    <RowDefinition Height="0*"/>
+                    <RowDefinition Height="24*"/>
+                    <RowDefinition Height="0*"/>
+                    <RowDefinition Height="0*"/>
+                    <RowDefinition Height="0*"/>
+                    <RowDefinition Height="0*"/>
+                    <RowDefinition Height="0*"/>
+                    <RowDefinition Height="0*"></RowDefinition>
                 </Grid.RowDefinitions>
 
                 <!--#endregion-->
 
                 <!--#region Text Boxes-->
 
-                <TextBox Text="{Binding Separation}" Grid.Column="2" Grid.Row="5" Margin="5,10,5,10" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center" IsReadOnly="True"  Background="Green" Foreground="White" Height="33">
-                    <TextBox.Resources>
-                        <Style TargetType="{x:Type Border}">
-                            <Setter Property="CornerRadius" Value="3"/>
-                        </Style>
-                    </TextBox.Resources>
+                <TextBox Text="{Binding SepIso}" Margin="4" Grid.Column="2" Grid.Row="6" VerticalAlignment="Center" HorizontalContentAlignment="Center" IsReadOnly="True"  Background="Green" Foreground="White" Height="20">
+
                 </TextBox>
+
+                <TextBox Text="{Binding SepIsoEdge}" Margin="4" Grid.Column="2" Grid.Row="7" VerticalAlignment="Center" HorizontalContentAlignment="Center" IsReadOnly="True"  Background="Green" Foreground="White" Height="20">
+
+                </TextBox>
+
+                <TextBox Text="{Binding SepDmaxEdgeAfterOpt}" Margin="4" Grid.Column="2" Grid.Row="8" VerticalAlignment="Center" HorizontalContentAlignment="Center" IsReadOnly="True"  Background="Green" Foreground="White" Height="20">
+
+                </TextBox>
+
 
                 <!--#endregion-->
 
@@ -59,23 +66,23 @@
                         </Style>
                     </ComboBox.Resources>
                 </ComboBox-->
-                <TextBlock Text="{Binding Plan}" Grid.Column="2" Grid.Row="1" Margin="0, 15"></TextBlock>
+                <TextBlock Text="{Binding Plan}" Grid.Column="2" Grid.Row="1" Margin="0,15,0,15"></TextBlock>
 
-                <ComboBox ItemsSource="{Binding BreastSides}" SelectedItem="{Binding SelectedBreastSide}" Grid.Column="2" Grid.Row="2" Margin="0, 15" IsReadOnly="True" >
+                <ComboBox ItemsSource="{Binding BreastSides}" SelectedItem="{Binding SelectedBreastSide}" Grid.Column="2" Grid.Row="2" Margin="0,15,0,15" IsReadOnly="True" >
                     <ComboBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="3"/>
                         </Style>
                     </ComboBox.Resources>
                 </ComboBox>
-                <ComboBox ItemsSource="{Binding LungStructures}" DisplayMemberPath="Id" SelectedItem="{Binding Ipsi_lung}" Grid.Column="2" Grid.Row="3" Margin="0, 15" IsReadOnly="True" >
+                <ComboBox ItemsSource="{Binding LungStructures}" DisplayMemberPath="Id" SelectedItem="{Binding Ipsi_lung}" Grid.Column="2" Grid.Row="3" Margin="0,15,0,15" IsReadOnly="True" >
                     <ComboBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="3"/>
                         </Style>
                     </ComboBox.Resources>
                 </ComboBox>
-                <ComboBox ItemsSource="{Binding HeartStructures}" DisplayMemberPath="Id" SelectedItem="{Binding Heart}" Grid.Column="2" Grid.Row="4" Margin="0, 15" IsReadOnly="True" >
+                <ComboBox ItemsSource="{Binding HeartStructures}" DisplayMemberPath="Id" SelectedItem="{Binding Heart}" Grid.Column="2" Grid.Row="4" Margin="0,15,0,15" IsReadOnly="True" >
                     <ComboBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="3"/>
@@ -90,17 +97,16 @@
                         </Style>
                     </ComboBox.Resources>
                 </ComboBox-->
-                <TextBlock Text="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="7" Margin="0"></TextBlock>
+                <TextBlock Text="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="5" Grid.RowSpan="5"/>
 
-                <TextBox  Grid.Column="2" Grid.Row="7" Text="{Binding LMCText}" Margin="0, 15">
+                <TextBox  Grid.Column="2" Grid.Row="9" Text="{Binding LMCText}" Margin="0,15,0,15"/>
 
-                </TextBox>
 
                 <!--#endregion-->
 
                 <!--#region List Boxes-->
 
-                <ListBox ItemsSource="{Binding StatusBoxItems}" Grid.Row="1" Grid.RowSpan="7" Margin="10" Height="325"  Background="#FF3F79B2" Foreground="White" OpacityMask="Gray">
+                <ListBox ItemsSource="{Binding StatusBoxItems}" Grid.Row="1" Grid.RowSpan="9" Margin="10,10,10,10"  Background="#FF3F79B2" Foreground="White" OpacityMask="Gray">
                     <ListBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="2"/>
@@ -128,13 +134,13 @@
 
                 <!--Label x:Name="lblPatId" Content="Patient ID:" Grid.Column="0" Grid.Row="0" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" /-->
                 <!--Label Content="{Binding SelectedPatientId}" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,0,0,0" Padding="10,0,30,3" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"  FontWeight="Bold" Background="#FFAA4545" Foreground="White"/-->
-                <Label x:Name="lblPlanId" Content="Original Plan ID:" Grid.Column="1" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblBreastSide" Content="Breast Side:" Grid.Column="1" Grid.Row="2" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblIpsiLung" Content="Ipsilateral Lung:" Grid.Column="1" Grid.Row="3" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblHeart" Content="Heart:" Grid.Column="1" Grid.Row="4" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblSeparation" Content="Field Separation (cm):" Grid.Column="1" Grid.Row="5" Margin="0,0,10,75" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="3" />
-                <Label x:Name="lblBeamEnergy" Content="Beam(s) Energy:" Grid.Column="1" Grid.Row="6" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblLMCModel" Content="LMC Model:" Grid.Column="1" Grid.Row="7" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold"/>
+                <Label x:Name="lblPlanId" Content="Original Plan ID:" Grid.Column="1" Grid.Row="1" Margin="0,0,10,52" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2" />
+                <Label x:Name="lblBreastSide" Content="Breast Side:" Grid.Column="1" Grid.Row="2" Margin="0,4,10,52" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2" />
+                <Label x:Name="lblIpsiLung" Content="Ipsilateral Lung:" Grid.Column="1" Grid.Row="3" Margin="0,4,10,52" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2" />
+                <Label x:Name="lblHeart" Content="Heart:" Grid.Column="1" Grid.Row="4" Margin="0,4,10,4" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblBeamEnergy" Content="Beam Energy:" Grid.Column="1" Grid.Row="5" Margin="0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblSeparation" Content="Field Separation (cm):" Grid.Column="1" Grid.Row="6" Margin="0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2" />
+                <Label x:Name="lblLMCModel" Content="LMC Model:" Grid.Column="1" Grid.Row="9" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="5"/>
                 <!--#endregion-->
 
             </Grid>
@@ -154,25 +160,25 @@
             <Border Grid.Column="1" Grid.ColumnSpan="2" BorderBrush="Transparent" BorderThickness="2" Margin="10" Padding="0">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1*"/>
-                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="149*"/>
+                        <ColumnDefinition Width="217*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                         <RowDefinition/>
                         <RowDefinition></RowDefinition>
                     </Grid.RowDefinitions>
-                    <CheckBox IsChecked="{Binding CustomPTV}" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" VerticalContentAlignment="Center" Content="Use Customized PTV"  Command="{Binding CbCustomPTV_Click}"/>
-                    <Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold"/>
-                    <ComboBox IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" SelectedItem="{Binding SelectedPTV}" Grid.Column="1" Grid.Row="1" IsReadOnly="True" Margin="10">
+                    <CheckBox IsChecked="{Binding CustomPTV}" Grid.ColumnSpan="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="118,0,0,0" VerticalContentAlignment="Center" Content="Use Customized PTV"  Command="{Binding CbCustomPTV_Click}" Height="15" Width="130"/>
+                    <Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,20,10,13" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/>
+                    <ComboBox IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" SelectedItem="{Binding SelectedPTV}" Grid.Column="1" Grid.Row="1" IsReadOnly="True" Margin="10,10,10,10">
                         <ComboBox.Resources>
                             <Style TargetType="{x:Type Border}">
                                 <Setter Property="CornerRadius" Value="3"/>
                             </Style>
                         </ComboBox.Resources>
                     </ComboBox>
-                    <Label Content="Approx Max Dose (%)" FontWeight="ExtraBold" Grid.Column="0" Grid.Row="2"></Label>
-                    <TextBox Text="{Binding MaxDoseGoal}" IsReadOnly="false" Grid.Column="1" Grid.Row="2"></TextBox>
+                    <Label Content="Approx Max Dose (%)" FontWeight="ExtraBold" Grid.Column="0" Grid.Row="1" Margin="0,42,0,0" Grid.RowSpan="2"></Label>
+                    <TextBox Text="{Binding MaxDoseGoal}" IsReadOnly="false" Grid.Column="1" Grid.Row="1" Margin="0,42,0,0" Grid.RowSpan="2"></TextBox>
                 </Grid>
             </Border>
         </Grid>

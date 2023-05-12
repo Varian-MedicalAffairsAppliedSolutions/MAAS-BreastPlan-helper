@@ -199,7 +199,7 @@ namespace MAAS_BreastPlan_helper.Models
         /// <param name="b2">The other beam entering the structure.</param>
         /// <param name="external">The structure being entered.</param>
         /// <returns>A double representing the separation distance between the entry points of the two beams.</returns>
-        private double ComputeBeamSeparation(Beam b1, Beam b2, Structure external)
+        public static double ComputeBeamSeparation(Beam b1, Beam b2, Structure external)
         {
             VVector direction1 = DirectionTowardSource(b1);
             VVector direction2 = DirectionTowardSource(b2);
@@ -207,10 +207,10 @@ namespace MAAS_BreastPlan_helper.Models
             VVector results2 = GetStructureEntryPoint(external, direction2, b2.IsocenterPosition);
 
             //  JAK (2023-06-03): this is a much more condensed way to compute the distance of separation.
-            return (results1 - results2).Length;
+            return Math.Round((results1 - results2).Length / 10, 2);
         }
 
-        public static double ComputeBeamSeparationWholeField(Beam b1, Beam b2, Structure external)
+        public static double ComputeBeamSeparationWholeField(Beam b1, Beam b2, Structure external, double z_override=0)
         {
             VVector direction1 = DirectionTowardSource(b1);
             VVector direction2 = DirectionTowardSource(b2);
@@ -226,6 +226,12 @@ namespace MAAS_BreastPlan_helper.Models
             
             var p2 = b2.IsocenterPosition;
             p2.x += b2.ControlPoints.First().JawPositions.X1;
+
+            if (z_override != 0)
+            {
+                p1.z = z_override; p2.z = z_override;
+            }
+                
 
             VVector results1 = GetStructureEntryPoint(external, direction1, p1);
             VVector results2 = GetStructureEntryPoint(external, direction2, p2);
