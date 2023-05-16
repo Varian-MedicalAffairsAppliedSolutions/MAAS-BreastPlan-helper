@@ -216,10 +216,11 @@ namespace MAAS_BreastPlan_helper.Models
             VVector direction2 = DirectionTowardSource(b2);
 
             var cp0 = b1.ControlPoints[0];
+            /*
             if (cp0.CollimatorAngle > 90)
             {
                 throw new Exception("Collimator can't be greater than 90 degrees");
-            }
+            }*/
 
             var p1 = b1.IsocenterPosition;
             p1.x += b1.ControlPoints.First().JawPositions.X1;

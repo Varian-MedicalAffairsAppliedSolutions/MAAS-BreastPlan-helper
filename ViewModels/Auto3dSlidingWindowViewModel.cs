@@ -221,6 +221,18 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var lLungStructures = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("lung")).ToList();
             LungStructures = new ObservableCollection<Structure>();
             foreach (var strucuture in lLungStructures) { LungStructures.Add(strucuture); }
+
+            // Select lung structure based on the position of the center point
+            if(selectedBreastSide == SIDE.LEFT) 
+            { 
+                Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x > 0).FirstOrDefault();
+            }
+            else
+            {
+                Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
+            }
+            
+            /*
             Ipsi_lung = LungStructures.FirstOrDefault();
 
             if (SelectedBreastSide == SIDE.LEFT)
@@ -230,7 +242,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 {
                     Ipsi_lung = lung_candidates.FirstOrDefault();
                 }
-            }
+            }*/
 
             MaxDoseGoal = settings.MaxDoseGoal;
             
