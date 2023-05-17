@@ -355,14 +355,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var CopiedSS = NewPlan.StructureSet;
             //var PTV = CopiedSS.Structures.Where(s => s.Id.ToLower().Contains("ptv")).First();
             var body = CopiedSS.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
-            //var bExistsPTV = PTV_OPT != null;
-
-            //await UpdateListBox($"Tried to find PTV and Body");
-
-
-
-            //await UpdateListBox($"Sparing heart and lung {NewPlan.Id}");
-
             //DoseValue renormPTV = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
 
 
