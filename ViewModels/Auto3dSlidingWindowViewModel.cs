@@ -372,6 +372,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //await UpdateListBox($"Dose is calculated");
 
 
+
             // Delete existing opt structures
             var optStructsOld = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
             foreach (var os in optStructsOld) { CopiedSS.RemoveStructure(os); }
