@@ -29,11 +29,17 @@ using System.IO;
 // 2. get field separation
     // 1. At beam isocenter 
     // 2. At beam edge iso plane
-    // 3. At beam edge Dmax plane after optimization 
-// 3. Display PTV volume (at end for script generated PTV)
+    // 3. At beam edge Dmax plane after optimization
+   
+// 3. Display PTV volume, in combobox ptv selection
 
 // 4. Label different distances
-// 5. Add msg box output where able
+// 5. Add more explicit output - list obejcttives
+
+// 6. Widen right most column
+// 7. unbold the LMC version text
+// 8. Stretch content to reach bottom of screen
+
 
 
 
@@ -189,7 +195,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
         {
             SepIso = 0;
             SepIsoEdge = 0;
-            SepDmaxEdgeAfterOpt = 0;
+            //SepDmaxEdgeAfterOpt = 0;
 
             Context = context;
             Settings = settings;
