@@ -17,7 +17,7 @@
                 <!--#region Row/Column Defs-->
 
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="400"/>
+                    <ColumnDefinition Width="407"/>
                     <ColumnDefinition/>
                     <ColumnDefinition Width="160"/>
                 </Grid.ColumnDefinitions>
@@ -38,11 +38,9 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBox Text="{Binding SepIso}" Grid.Column="2" Grid.Row="6" VerticalAlignment="Center" HorizontalAlignment="Center" IsReadOnly="True" Background="White" Foreground="Black" Height="20" FontWeight="Bold" Width="160" Margin="0,3,0,3"/>
-
-                <TextBox Text="{Binding SepIsoEdge}" Grid.Column="2" Grid.Row="7" VerticalAlignment="Center" HorizontalAlignment="Center" IsReadOnly="True" Background="White" Foreground="Black" Height="20" FontWeight="Bold" Width="160" Margin="0,3,0,3"/>
-
-                <TextBox Text="{Binding SepDmaxEdgeAfterOpt}" Grid.Column="2" Grid.Row="8" VerticalAlignment="Center" HorizontalAlignment="Center" IsReadOnly="True" Background="White" Foreground="Black" Height="20" FontWeight="Bold" Width="160" Margin="0,3,0,3"/>
+                <TextBox Text="{Binding SepIso}" Grid.Column="0" Grid.Row="8" VerticalAlignment="Center" HorizontalAlignment="Left" IsReadOnly="True" Background="White" Foreground="Black" Height="20" FontWeight="Bold" Width="160" Margin="237,0,0,0"/>
+                <TextBox Text="{Binding SepIsoEdge}" Grid.Column="0" Grid.Row="9" VerticalAlignment="Center" HorizontalAlignment="Left" IsReadOnly="True" Background="White" Foreground="Black" Height="20" FontWeight="Bold" Width="160" Margin="237,0,0,0"/>
+                <TextBox Text="{Binding SepDmaxEdgeAfterOpt}" Grid.Column="0" Grid.Row="10" VerticalAlignment="Center" HorizontalAlignment="Left" IsReadOnly="True" Background="White" Foreground="Black" Height="20" FontWeight="Bold" Width="160" Margin="237,0,0,0"/>
 
                 <TextBlock Text="{Binding Plan}" Grid.Column="2" Grid.Row="1" Margin="0,10,0,10" FontWeight="Bold" />
 
@@ -64,9 +62,9 @@
 
                 <TextBlock Text="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="5" Foreground="Black" FontWeight="Bold" Margin="0,3,0,4"/>
 
-                <TextBox  Grid.Column="2" Grid.Row="9" Text="{Binding LMCText}" Margin="0,8,0,8" Height="20" FontWeight="Bold"/>
+                <TextBox  Grid.Column="2" Grid.Row="7" Text="{Binding LMCText}" Margin="0,8,0,8" FontWeight="Bold"/>
 
-                <ListBox ItemsSource="{Binding StatusBoxItems}" Grid.Row="1" Grid.RowSpan="9" Margin="10,10,10,10"  Background="#FF3F79B2" Foreground="White" OpacityMask="Gray">
+                <ListBox ItemsSource="{Binding StatusBoxItems}" Grid.Row="1" Grid.RowSpan="5" Margin="10,10,10,10"  Background="#FF3F79B2" Foreground="White" OpacityMask="Gray">
                     <ListBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="2"/>
@@ -88,13 +86,34 @@
                     </ListBox.ItemContainerStyle>
                 </ListBox>
 
-                <Label x:Name="lblPlanId" Content="Original Plan ID:" Grid.Column="1" Grid.Row="1" Margin="0,0,10,10" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblBreastSide" Content="Breast Side:" Grid.Column="1" Grid.Row="2" Margin="0,4,10,10" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblIpsiLung" Content="Ipsilateral Lung:" Grid.Column="1" Grid.Row="3" Margin="0,4,10,10" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblHeart" Content="Heart:" Grid.Column="1" Grid.Row="4" Margin="0,4,10,4" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblBeamEnergy" Content="Beam Energy:" Grid.Column="1" Grid.Row="5" Margin="0,0,0,1" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
-                <Label x:Name="lblSeparation" Content="Field Separation (cm):" Grid.Column="1" Grid.Row="6" Margin="0,0,0,7" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="3" />
-                <Label x:Name="lblLMCModel" Content="LMC Model:" Grid.Column="1" Grid.Row="9" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="5"/>
+                <DockPanel Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="1" Margin="0,5,0,6">
+                    <Label DockPanel.Dock="Left" Content="Field Separations (cm)" FontWeight="ExtraBold"/>
+                    <Separator Width="246"/>
+                </DockPanel>
+
+                <Label x:Name="lblSeparation1" Content="CAX:" Grid.Column="0" Grid.Row="8" Margin="0,10,10,7" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblSeparation2" Content="Field Edge:" Grid.Column="0" Grid.Row="9" Margin="0,10,10,7" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblSeparation3" Content="Field Edge, Dmax Plane:" Grid.Column="0" Grid.Row="10" Margin="0,0,0,7" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+
+                <Label x:Name="lblPlanId" Content="Original Plan ID:" Grid.Column="1" Grid.Row="1" Margin="0,0,10,10" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblBreastSide" Content="Breast Side:" Grid.Column="1" Grid.Row="2" Margin="0,4,10,10" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblIpsiLung" Content="Ipsilateral Lung:" Grid.Column="1" Grid.Row="3" Margin="0,4,10,10" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblHeart" Content="Heart:" Grid.Column="1" Grid.Row="4" Margin="0,4,10,4" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+                <Label x:Name="lblBeamEnergy" Content="Beam Energy:" Grid.Column="1" Grid.Row="5" Margin="0,0,0,1" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
+
+                <Label x:Name="lblLMCModel" Content="LMC Model:" Grid.Column="1" Grid.Row="7" Margin="0,0,10,43" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/>
+
+                <CheckBox Grid.Row="8" Grid.Column="1" IsChecked="{Binding CustomPTV}" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Content="Use Customized PTV" Command="{Binding CbCustomPTV_Click}" FontWeight="ExtraBold" Height="15" Width="141" />
+
+                <!--Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,20,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/-->
+
+                <ComboBox Grid.Row="8" Grid.Column="2" IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" SelectedItem="{Binding SelectedPTV}"  IsReadOnly="True"  Margin="0,10,0,10"/>
+
+                <Label Content="Approx Max Dose (%)" Grid.Row="9" Grid.Column="1"  HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" FontWeight="ExtraBold" Height="26" Width="141"/>
+
+                <TextBox Text="{Binding MaxDoseGoal}" Grid.Row="9" Grid.Column="2" IsReadOnly="False"   Margin="0,10,0,10"/>
+
+
                 <!--#endregion-->
 
             </Grid>
@@ -104,7 +123,7 @@
 
         <!--#region Customized PTV-->
 
-        <Grid Background="White" Margin="10">
+        <!--" Grid Background="White" Margin="10">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
@@ -130,7 +149,7 @@
 
                     <CheckBox IsChecked="{Binding CustomPTV}" HorizontalAlignment="Center" VerticalAlignment="Center" VerticalContentAlignment="Center" Content="Use Customized PTV" Command="{Binding CbCustomPTV_Click}" FontWeight="ExtraBold" />
 
-                    <!--Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,20,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/-->
+                    <Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,20,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/>
 
                     <ComboBox IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" SelectedItem="{Binding SelectedPTV}" Grid.Column="1" Grid.Row="0" IsReadOnly="True" Margin="10,10,10,10"/>
 
@@ -142,7 +161,7 @@
 
             </Border>
 
-        </Grid>
+        </Grid-->
 
 
         <!--#endregion-->
@@ -154,8 +173,7 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="btnPlan" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" Margin="10" Padding="10" Content="Begin Auto-Plan" ClickMode="Press" Command="{Binding CreatePlanCMD}" FontWeight="Bold" />
-            <Button x:Name="btnClose" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" Margin="10" Padding="73,10,73,10" Content="Close" ClickMode="Press" FontWeight="Bold" />
+            <Button x:Name="btnPlan" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" Margin="10" Padding="10" Content="Begin Auto-Plan" ClickMode="Press" Command="{Binding CreatePlanCMD}" FontWeight="Bold" />
         </Grid>
 
         <!--#endregion-->

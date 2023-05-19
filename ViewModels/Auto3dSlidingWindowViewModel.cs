@@ -32,6 +32,10 @@ using System.IO;
     // 3. At beam edge Dmax plane after optimization 
 // 3. Display PTV volume (at end for script generated PTV)
 
+// 4. Label different distances
+// 5. Add msg box output where able
+
+
 
 
 namespace MAAS_BreastPlan_helper.ViewModels
@@ -205,7 +209,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 throw new Exception("Plan is null");
             }
 
-            CreatePlanCMD = new DelegateCommand(OnCreateBreastPlan);
+            CreatePlanCMD = new DelegateCommand(OnCreateBreastPlanAsync);
 
             StatusBoxItems = new ObservableCollection<string>();
 
@@ -293,7 +297,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             }
         }
 
-        public void OnCreateBreastPlan()
+        public async void OnCreateBreastPlanAsync()
         {
             // Save some properties back to config
             // LMC
@@ -301,10 +305,9 @@ namespace MAAS_BreastPlan_helper.ViewModels
             Settings.LMCModel = LMCText;
             File.WriteAllText(JsonPath, JsonConvert.SerializeObject(Settings));
 
-
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
             int nrBeams = Beams.Count();
-            //await UpdateListBox("Starting...");
+            await UpdateListBox("Starting...");
             if (nrBeams != 2)
             {
                 throw new Exception($"Must have 2 beams but got {nrBeams}");
@@ -338,25 +341,20 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 throw new Exception($"Beam weights don't sum to 1: {weightSum}");
             }
 
-            //await UpdateListBox("All checks passed, copying to new plan");
+            await UpdateListBox("All checks passed, copying to new plan");
 
             // Copy plan and set new name
             var NewPlan = Context.Course.CopyPlanSetup(Plan) as ExternalPlanSetup;
             NewPlan.Id = Utils.GetNewPlanName(Context.Course, Plan.Id, 13);
 
             NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
-            //await UpdateListBox($"Set vol dose model");
             NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, Plan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
-            //await UpdateListBox($"Set opt model");
 
-            //await UpdateListBox($"New plan created with id {NewPlan.Id}");
+            await UpdateListBox($"New plan created with id {NewPlan.Id}");
 
             // Check if there is a PTV
             var CopiedSS = NewPlan.StructureSet;
-            //var PTV = CopiedSS.Structures.Where(s => s.Id.ToLower().Contains("ptv")).First();
             var body = CopiedSS.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
-            //DoseValue renormPTV = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
-
 
             // Perform dose calc
             NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
@@ -367,11 +365,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var maxBodyDose = Plan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
             NewPlan.PlanNormalizationValue = maxBodyDose.Dose;
 
-            var DM3D = NewPlan.Dose.DoseMax3D;
-            //await UpdateListBox($"Dose max of newplan and plan = {NewPlan.Dose.DoseMax3D} | {Plan.Dose.DoseMax3D}");
-            //await UpdateListBox($"Dose is calculated");
-
-
+            //var DM3D = NewPlan.Dose.DoseMax3D;
+            await UpdateListBox($"Dose calculation finished");
 
             // Delete existing opt structures
             var optStructsOld = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
@@ -430,7 +425,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
 
-            //await UpdateListBox($"optOptions created");
+            await UpdateListBox($"optOptions created");
 
             var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
             string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
@@ -470,7 +465,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Get optimization setup
             var optSet = NewPlan.OptimizationSetup;
-            //await UpdateListBox($"Got old opt setup");
+            await UpdateListBox($"Got old opt setup");
 
             var RxDose = Plan.TotalDose;
 
@@ -496,16 +491,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // - Upper 5 % Volume, 103 % Rx Dose – Priority 140
             optSet.AddPointObjective(IDL90, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 5, 140);
             //await UpdateListBox($"Added 6");
+            await UpdateListBox("Created objectives. Starting optimization...");
 
             // Optimize
             NewPlan.Optimize(opt);
 
             
-            //await UpdateListBox($"Finished opt");
+            await UpdateListBox($"Finished optimization");
 
-            // Remove the ptv opt
-            //CopiedSS.RemoveStructure(PTV_OPT);
-            //CopiedSS.RemoveStructure(IDL90);
 
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
             NewPlan.CalculateLeafMotions();
@@ -537,16 +530,23 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 NewPlan.CalculateLeafMotions();
                 NewPlan.CalculateDose();
 
-                if (Settings.Cleanup)
-                {
-                    var optStructs = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
-                    foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
-                }
+            }
+
+            if (Settings.Cleanup)
+            {
+                var optStructs = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
+                foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
             }
 
             MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
         }
 
-        
+        private async Task UpdateListBox(string s)
+        {
+            StatusBoxItems.Add(s);
+            //statusBox.ScrollIntoView(s);
+            await Task.Delay(1);
+        }
+
     }
 }
