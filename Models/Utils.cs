@@ -210,23 +210,25 @@ namespace MAAS_BreastPlan_helper.Models
             return Math.Round((results1 - results2).Length / 10, 2);
         }
 
-        public static double ComputeBeamSeparationWholeField(Beam b1, Beam b2, Structure external, double z_override=0)
+        public static double ComputeBeamSeparationWholeField(Beam b1, Beam b2, Structure external, SIDE side, double z_override=0)
         {
             VVector direction1 = DirectionTowardSource(b1);
             VVector direction2 = DirectionTowardSource(b2);
 
-            var cp0 = b1.ControlPoints[0];
-            /*
-            if (cp0.CollimatorAngle > 90)
-            {
-                throw new Exception("Collimator can't be greater than 90 degrees");
-            }*/
-
             var p1 = b1.IsocenterPosition;
-            p1.x += b1.ControlPoints.First().JawPositions.X1;
-            
             var p2 = b2.IsocenterPosition;
-            p2.x += b2.ControlPoints.First().JawPositions.X1;
+
+            if (side == SIDE.LEFT)
+            {
+                p1.x += b1.ControlPoints.First().JawPositions.X1;
+                p2.x += b2.ControlPoints.First().JawPositions.X1;
+            }
+            else
+            {
+                p1.x += b1.ControlPoints.First().JawPositions.X2;
+                p2.x += b2.ControlPoints.First().JawPositions.X2;
+            }
+            
 
             if (z_override != 0)
             {

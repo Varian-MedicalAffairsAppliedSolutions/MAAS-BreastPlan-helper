@@ -22,23 +22,25 @@ using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using MAAS_BreastPlan_helper.Properties;
 using System.IO;
+using System.Collections.Specialized;
+using System.Collections;
+using System.Windows.Controls;
 
 // Anthony Note fix
 
 // TODO
-// 2. get field separation
-    // 1. At beam isocenter 
-    // 2. At beam edge iso plane
-    // 3. At beam edge Dmax plane after optimization
-   
+
+
 // 3. Display PTV volume, in combobox ptv selection
 
-// 4. Label different distances
-// 5. Add more explicit output - list obejcttives
 
-// 6. Widen right most column
-// 7. unbold the LMC version text
+
+
+
+// =============================================
 // 8. Stretch content to reach bottom of screen
+
+
 
 
 
@@ -46,6 +48,7 @@ using System.IO;
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
+
     public class Auto3dSlidingWindowViewModel : BindableBase
     {
         private ScriptContext Context { get; set; }
@@ -183,13 +186,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public ObservableCollection<Structure> HeartStructures { get; set; }
 
-        private string JsonPath { get; set; }  // Path to config file
+        private string JsonPath { get; set; }  // Path to config file\
 
-        /// <summary>
-        /// Determine breast side based on isocenter coordinates
-        /// </summary>
-        /// <param name="plan">The treatment plan.</param>
-        /// <returns>The element of the SIDE enum representing the treatment side.</returns>
+       
+
 
         public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path) 
         {
@@ -218,6 +218,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             CreatePlanCMD = new DelegateCommand(OnCreateBreastPlanAsync);
 
             StatusBoxItems = new ObservableCollection<string>();
+
 
             // Initialize observable collections
             var lHeartStructures = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("heart")).ToList();
@@ -277,7 +278,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var body = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
 
             SepIso = Utils.ComputeBeamSeparation(Plan.Beams.First(), Plan.Beams.Last(), body); // center of field iso plane
-            SepIsoEdge = Utils.ComputeBeamSeparationWholeField(Plan.Beams.First(), Plan.Beams.Last(), body); // field edge iso plane
+            SepIsoEdge = Utils.ComputeBeamSeparationWholeField(Plan.Beams.First(), Plan.Beams.Last(), body, selectedBreastSide); // field edge iso plane
             
             // Pick:
             // 1. Breast side,
@@ -311,9 +312,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
             Settings.LMCModel = LMCText;
             File.WriteAllText(JsonPath, JsonConvert.SerializeObject(Settings));
 
+            await UpdateListBox($"Starting autoplan. Debug = {Settings.Debug}");
+            await UpdateListBox("Checking two-field plan parameters");
+
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
             int nrBeams = Beams.Count();
-            await UpdateListBox("Starting...");
+            //await UpdateListBox("Starting...");
             if (nrBeams != 2)
             {
                 throw new Exception($"Must have 2 beams but got {nrBeams}");
@@ -367,7 +371,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.CalculateDose();
             NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
 
-            //await UpdateListBox($"Set norm value");
+            await UpdateListBox($"Set dose normalization to global max");
             var maxBodyDose = Plan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
             NewPlan.PlanNormalizationValue = maxBodyDose.Dose;
 
@@ -384,7 +388,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (!CustomPTV)
             {
                 // Create 50% IDL structure as PTV_OPT if PTV not selected 
-                //await UpdateListBox($"PTV_OPT created");
+                await UpdateListBox($"PTV_OPT created");
                 PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseUnit.Percent));
                 PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
             }
@@ -422,7 +426,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Apply margin again
             IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
-            //await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume} CC");
+            await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume} CC");
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -471,39 +475,43 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Get optimization setup
             var optSet = NewPlan.OptimizationSetup;
-            await UpdateListBox($"Got old opt setup");
-
             var RxDose = Plan.TotalDose;
 
             // Add all objectives
             // -- PTV_OPT --: 
-            // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
+            
+
+            if (Settings.Debug) { await UpdateListBox("Creating upper 10 % Volume, 105 % Rx Dose – Priority 120"); }
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
-            //await UpdateListBox($"Added 1");
+
             // - Upper 30 % Volume, 103 % Rx Dose – Priority 110
+            if (Settings.Debug) { await UpdateListBox("Creating upper 30 % Volume, 103 % Rx Dose – Priority 110"); }
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 30, 110);
-            //await UpdateListBox($"Added 2");
+            ////await UpdateListBox($"Added 2");
             // - Lower 95 % Volume, 100 % Rx Dose – Priority 135
+            if (Settings.Debug) { await UpdateListBox("Creating lower 95 % Volume, 100 % Rx Dose – Priority 135"); }
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(RxDose.Dose, RxDose.Unit), 95, 135);
-            //await UpdateListBox($"Added 3");
+            ////await UpdateListBox($"Added 3");
             // - Lower 99.9 % Volume, 95 % Rx Dose – Priority 130
+            if (Settings.Debug) { await UpdateListBox("Creating lower 99.9 % Volume, 95 % Rx Dose – Priority 130"); }
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(0.95 * RxDose.Dose, RxDose.Unit), 99.9, 130);
-            //await UpdateListBox($"Added 4");
+            ////await UpdateListBox($"Added 4");
             // -- Body --
             // - Upper 0 % Volume, 108 % Rx Dose – Priority 200
+            if (Settings.Debug) { await UpdateListBox("Creating upper 0 % Volume, 108 % Rx Dose – Priority 200"); }
             optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal / 100) - 0.01) * RxDose.Dose, RxDose.Unit), 0, 200);
-            //await UpdateListBox($"Added 5");
+            ////await UpdateListBox($"Added 5");
             // -- 90 % IDL structure --
             // - Upper 5 % Volume, 103 % Rx Dose – Priority 140
+            if (Settings.Debug) { await UpdateListBox("Creating upper 5 % Volume, 103 % Rx Dose – Priority 140"); }
             optSet.AddPointObjective(IDL90, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 5, 140);
-            //await UpdateListBox($"Added 6");
-            await UpdateListBox("Created objectives. Starting optimization...");
+            ////await UpdateListBox($"Added 6");
+            ////await UpdateListBox("Created objectives. Starting optimization...");
 
             // Optimize
+            await UpdateListBox($"Starting initial pass");
             NewPlan.Optimize(opt);
-
-            
-            await UpdateListBox($"Finished optimization");
+            await UpdateListBox($"Finished initial pass");
 
 
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
@@ -511,10 +519,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             NewPlan.CalculateDose();
 
-            SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, NewPlan.Dose.DoseMax3DLocation.z);
+            SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, selectedBreastSide, NewPlan.Dose.DoseMax3DLocation.z);
 
             if (Settings.SecondOpt)
-            { 
+            {
+                await UpdateListBox("Starting second pass");
                 // Create hot and cold spotes
                 Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
                 coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
@@ -536,6 +545,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 NewPlan.CalculateLeafMotions();
                 NewPlan.CalculateDose();
 
+                await UpdateListBox("Finished second pass");
+
             }
 
             if (Settings.Cleanup)
@@ -544,13 +555,15 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
             }
 
+            await UpdateListBox("Complete. Close window to view plan.");
+
             MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
         }
 
         private async Task UpdateListBox(string s)
         {
             StatusBoxItems.Add(s);
-            //statusBox.ScrollIntoView(s);
+            //StatusBox.ScrollIntoView(s);
             await Task.Delay(1);
         }
 
