@@ -3,9 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:MAAS_BreastPlan_helper.Views"
-             xmlns:behaviors="clr-namespace:MAAS_BreastPlan_helper.ViewModels"
              mc:Ignorable="d" 
+             xmlns:custom="clr-namespace:MAAS_BreastPlan_helper.CustomControls" xmlns:viewmodels="clr-namespace:MAAS_BreastPlan_helper.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:Auto3dSlidingWindowViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
 
     <StackPanel Background="White">
@@ -63,20 +62,23 @@
 
                 <TextBlock Text="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="5" Foreground="Black" FontWeight="Bold" Margin="0,3,0,4"/>
 
-                <TextBox  Grid.Column="2" Grid.Row="7" Text="{Binding LMCText}" Margin="0,8,0,8"/>
-
-                <ListBox ItemsSource="{Binding StatusBoxItems}" 
+                <TextBox  Grid.Column="2" Grid.Row="7" Text="{Binding LMCModel}" TextAlignment="Left" Margin="0,8,0,8"/>
+                <TextBox  Grid.Column="2" Grid.Row="8" Text="{Binding LMCVersion}" TextAlignment="Left" Margin="0,8,0,8"/>
+                
+                <custom:ScrollingListBox ItemsSource="{Binding StatusBoxItems}" 
                          Grid.Row="1" Grid.RowSpan="5"
                          Margin="10,10,10,10"  Background="#FF3F79B2" 
                          Foreground="White" OpacityMask="Gray"
-                         MaxHeight="230">
-                    
-                    <ListBox.Resources>
+                         MaxHeight="230"
+                         IsSynchronizedWithCurrentItem="True"
+                         >
+
+                    <custom:ScrollingListBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="2"/>
                         </Style>
-                    </ListBox.Resources>
-                    <ListBox.ItemContainerStyle>
+                    </custom:ScrollingListBox.Resources>
+                    <custom:ScrollingListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True" >
@@ -89,8 +91,8 @@
                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
                             </Style.Resources>
                         </Style>
-                    </ListBox.ItemContainerStyle>
-                </ListBox>
+                    </custom:ScrollingListBox.ItemContainerStyle>
+                </custom:ScrollingListBox>
 
                 <DockPanel Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="1" Margin="0,5,0,6">
                     <Label DockPanel.Dock="Left" Content="Field Separations (cm)" FontWeight="ExtraBold"/>
@@ -108,16 +110,18 @@
                 <Label x:Name="lblBeamEnergy" Content="Beam Energy:" Grid.Column="1" Grid.Row="5" Margin="0,0,0,1" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" />
 
                 <Label x:Name="lblLMCModel" Content="LMC Model:" Grid.Column="1" Grid.Row="7" Margin="0,0,10,43" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/>
+                <Label x:Name="lblLMCVersion" Content="LMC Version:" Grid.Column="1" Grid.Row="8" Margin="0,0,10,43" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/>
 
-                <CheckBox Grid.Row="8" Grid.Column="1" IsChecked="{Binding CustomPTV}" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Content="Use Customized PTV" Command="{Binding CbCustomPTV_Click}" FontWeight="ExtraBold" Height="15" Width="141" />
+
+                <CheckBox Grid.Row="9" Grid.Column="1" IsChecked="{Binding CustomPTV}" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Content="Use Customized PTV" Command="{Binding CbCustomPTV_Click}" FontWeight="ExtraBold" Height="15" Width="141" />
 
                 <!--Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,20,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold" Grid.RowSpan="2"/-->
 
-                <ComboBox Grid.Row="8" Grid.Column="2" IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" SelectedItem="{Binding SelectedPTV}"  IsReadOnly="True"  Margin="0,10,0,10"/>
+                <ComboBox Grid.Row="9" Grid.Column="2" IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" SelectedItem="{Binding SelectedPTV}"  IsReadOnly="True"  Margin="0,10,0,10"/>
 
-                <Label Content="Approx Max Dose (%)" Grid.Row="9" Grid.Column="1"  HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" FontWeight="ExtraBold" Height="26" Width="141"/>
+                <Label Content="Approx Max Dose (%)" Grid.Row="10" Grid.Column="1"  HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" FontWeight="ExtraBold" Height="26" Width="141"/>
 
-                <TextBox Text="{Binding MaxDoseGoal}" Grid.Row="9" Grid.Column="2" IsReadOnly="False"   Margin="0,10,0,10"/>
+                <TextBox Text="{Binding MaxDoseGoal}" Grid.Row="10" Grid.Column="2" IsReadOnly="False"   Margin="0,10,0,10"/>
 
 
                 <!--#endregion-->

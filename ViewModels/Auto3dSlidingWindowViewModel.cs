@@ -25,6 +25,8 @@ using System.IO;
 using System.Collections.Specialized;
 using System.Collections;
 using System.Windows.Controls;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.RegularExpressions;
 
 // Anthony Note fix
 
@@ -33,7 +35,7 @@ using System.Windows.Controls;
 
 // 3. Display PTV volume, in combobox ptv selection
 
-
+// 4. PTV button unchecked error
 
 
 
@@ -164,12 +166,20 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public ObservableCollection<Structure> LungStructures { get; set; }
 
-        private string lmcText;
+        private string lmcModel;
 
-        public string LMCText
+        public string LMCModel
         {
-            get { return lmcText; }
-            set { SetProperty(ref lmcText, value); }
+            get { return lmcModel; }
+            set { SetProperty(ref lmcModel, value); }
+        }
+
+        private string lmcVersion;
+
+        public string LMCVersion
+        {
+            get { return lmcVersion; }
+            set { SetProperty(ref lmcVersion, value); }
         }
 
         public DelegateCommand CbCustomPTV_Click { get; set; }
@@ -243,23 +253,15 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
             }
             
-            /*
-            Ipsi_lung = LungStructures.FirstOrDefault();
-
-            if (SelectedBreastSide == SIDE.LEFT)
-            {
-                var lung_candidates = LungStructures.Where(s => s.Id.ToLower().Contains("left")).ToList().Concat(LungStructures.Where(s => s.Id.ToLower().Contains("lt")).ToList());// + LungStructures.Where(s => s.Id.ToLower().Contains("left")).ToList();
-                if (lung_candidates.Count() > 0)
-                {
-                    Ipsi_lung = lung_candidates.FirstOrDefault();
-                }
-            }*/
+            
 
             MaxDoseGoal = settings.MaxDoseGoal;
             
             SelectedEnergy = Utils.GetFluenceEnergyMode(Plan.Beams.Where(b => !b.IsSetupField).First()).Item2;
 
-            LMCText = settings.LMCModel;
+            var LMCSplit = splitLMC(settings.LMCModel);
+            LMCModel = LMCSplit.Item1;
+            LMCVersion = LMCSplit.Item2;
 
             PTVItems = new ObservableCollection<Structure>();
             foreach(var s in Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("ptv")))
@@ -309,7 +311,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // Save some properties back to config
             // LMC
             Settings.HotSpotIDL = MaxDoseGoal;
-            Settings.LMCModel = LMCText;
+
+            Settings.LMCModel = joinLMC(LMCModel, LMCVersion);
+
+
             File.WriteAllText(JsonPath, JsonConvert.SerializeObject(Settings));
 
             await UpdateListBox($"Starting autoplan. Debug = {Settings.Debug}");
@@ -388,20 +393,23 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (!CustomPTV)
             {
                 // Create 50% IDL structure as PTV_OPT if PTV not selected 
-                await UpdateListBox($"PTV_OPT created");
                 PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseUnit.Percent));
+                //await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
                 PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
+                await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
             }
 
             else
             {
+                
                 PTV_OPT.SegmentVolume = SelectedPTV.SegmentVolume;
+                await UpdateListBox($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC");
             }
 
 
             if (PTV_OPT.Volume < 0.0001)
             {
-                throw new Exception($"Structure volume of PTV opt is too low: {PTV_OPT.Volume} CC");
+                throw new Exception($"Structure volume of PTV opt is too low: {PTV_OPT.Volume:F2} CC");
             }
 
             // Create 70 - 95% Isodose level structures
@@ -426,7 +434,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Apply margin again
             IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
-            await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume} CC");
+            await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC");
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -558,6 +566,33 @@ namespace MAAS_BreastPlan_helper.ViewModels
             await UpdateListBox("Complete. Close window to view plan.");
 
             MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
+        }
+
+        private Tuple<string, string> splitLMC(string lMCModel)
+        {
+        
+            Regex regex = new Regex(@"^([^\[]+)(\s\[(\d+\.\d+\.\d+)\])?$");
+
+            string model;
+            string version;
+            Match match = regex.Match(lMCModel);
+            if (match.Success)
+            {
+                model = match.Groups[1].Value.Trim();
+                version = match.Groups[3].Value;
+                
+            }
+            else
+            {
+                throw new Exception($"Could not find model and version from {lMCModel}");
+            }
+
+            return new Tuple<string, string> (model, version);
+        }
+
+        public string joinLMC(string model, string version)
+        {
+            return $"{model} [{version}]";
         }
 
         private async Task UpdateListBox(string s)
