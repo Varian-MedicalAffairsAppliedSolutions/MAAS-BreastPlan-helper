@@ -604,7 +604,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
         {
             StatusBoxItems.Add(s);
             //StatusBox.ScrollIntoView(s);
-            await Task.Delay(1);
+            await Task.Delay(500);
         }
 
     }
