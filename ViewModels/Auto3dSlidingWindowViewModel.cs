@@ -317,8 +317,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             File.WriteAllText(JsonPath, JsonConvert.SerializeObject(Settings));
 
-            await UpdateListBox($"Starting autoplan. Debug = {Settings.Debug}");
-            await UpdateListBox("Checking two-field plan parameters");
+            if (Settings.Debug)
+            {
+                await UpdateListBox($"Starting autoplan. Debug = {Settings.Debug}");
+                await UpdateListBox("Checking two-field plan parameters");
+            }
+            
 
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
             int nrBeams = Beams.Count();
@@ -356,7 +360,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 throw new Exception($"Beam weights don't sum to 1: {weightSum}");
             }
 
-            await UpdateListBox("All checks passed, copying to new plan");
+
+            if (Settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
 
             // Copy plan and set new name
             var NewPlan = Context.Course.CopyPlanSetup(Plan) as ExternalPlanSetup;
@@ -365,7 +370,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
             NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, Plan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
 
-            await UpdateListBox($"New plan created with id {NewPlan.Id}");
+            if (Settings.Debug) { await UpdateListBox($"New plan created with id {NewPlan.Id}"); }
 
             // Check if there is a PTV
             var CopiedSS = NewPlan.StructureSet;
@@ -376,12 +381,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.CalculateDose();
             NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
 
-            await UpdateListBox($"Set dose normalization to global max");
+            if (Settings.Debug) { await UpdateListBox($"Set dose normalization to global max"); }
             var maxBodyDose = Plan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
             NewPlan.PlanNormalizationValue = maxBodyDose.Dose;
 
             //var DM3D = NewPlan.Dose.DoseMax3D;
-            await UpdateListBox($"Dose calculation finished");
+            if (Settings.Debug) { await UpdateListBox($"Dose calculation finished"); }
 
             // Delete existing opt structures
             var optStructsOld = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
@@ -396,14 +401,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseUnit.Percent));
                 //await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
                 PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
-                await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
+                if (Settings.Debug) { await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC"); }
             }
 
             else
             {
                 
                 PTV_OPT.SegmentVolume = SelectedPTV.SegmentVolume;
-                await UpdateListBox($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC");
+                if (Settings.Debug) { await UpdateListBox($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC"); }
             }
 
 
@@ -434,7 +439,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Apply margin again
             IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
-            await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC");
+            if (Settings.Debug) { await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC"); }
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -443,7 +448,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
 
-            await UpdateListBox($"optOptions created");
+            if (Settings.Debug) { await UpdateListBox($"optOptions created"); }
 
             var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
             string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
@@ -517,9 +522,9 @@ namespace MAAS_BreastPlan_helper.ViewModels
             ////await UpdateListBox("Created objectives. Starting optimization...");
 
             // Optimize
-            await UpdateListBox($"Starting initial pass");
+            if (Settings.Debug) { await UpdateListBox($"Starting initial pass"); }
             NewPlan.Optimize(opt);
-            await UpdateListBox($"Finished initial pass");
+            if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
 
 
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
@@ -531,7 +536,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             if (Settings.SecondOpt)
             {
-                await UpdateListBox("Starting second pass");
+                if (Settings.Debug) { await UpdateListBox("Starting second pass"); }
                 // Create hot and cold spotes
                 Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
                 coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
@@ -553,7 +558,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 NewPlan.CalculateLeafMotions();
                 NewPlan.CalculateDose();
 
-                await UpdateListBox("Finished second pass");
+                if (Settings.Debug) { await UpdateListBox("Finished second pass"); }
 
             }
 
@@ -563,7 +568,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
             }
 
-            await UpdateListBox("Complete. Close window to view plan.");
+            if (Settings.Debug) { await UpdateListBox("Complete. Close window to view plan."); }
 
             MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
         }

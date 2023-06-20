@@ -1,14 +1,11 @@
 using System;
 using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using MAAS_BreastPlan_helper;
-using System.Windows.Input;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -22,7 +19,7 @@ using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 
 namespace VMS.TPS
 {
-  public class Script
+    public class Script
   {
     private string newBuildURL = "https://github.com/Varian-Innovation-Center/MAAS-BreastPlan-helper";
 
@@ -35,6 +32,9 @@ namespace VMS.TPS
             MessageBox.Show("No active plan selected - exiting.");
             return;
         }
+
+        var logger = new AppLogger.Logger();
+        logger.Log("hi");
 
         PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
         if (plan.PlanType != PlanType.ExternalBeam)
