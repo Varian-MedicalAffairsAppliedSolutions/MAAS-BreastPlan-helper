@@ -535,6 +535,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
             Log.Debug("Finished initial pass");
 
+            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
+            NewPlan.CalculateLeafMotions();
+
+            NewPlan.CalculateDose();
+
             // Dose level check
             DoseValue HotSpotIDL = new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent);
             if (HotSpotIDL > NewPlan.Dose.DoseMax3D)
@@ -545,12 +550,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
                 HotSpotIDL = NewPlan.Dose.DoseMax3D * 0.99;
             }
-
-
-            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            NewPlan.CalculateLeafMotions();
-
-            NewPlan.CalculateDose();
 
             SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, selectedBreastSide, NewPlan.Dose.DoseMax3DLocation.z);
 
