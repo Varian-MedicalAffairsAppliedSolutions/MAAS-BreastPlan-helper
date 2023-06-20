@@ -543,7 +543,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 if (Settings.Debug) { await UpdateListBox(msg); }
                 Log.Debug(msg);
 
-                HotSpotIDL = NewPlan.Dose.DoseMax3D * 0.95;
+                HotSpotIDL = NewPlan.Dose.DoseMax3D * 0.99;
             }
 
 
