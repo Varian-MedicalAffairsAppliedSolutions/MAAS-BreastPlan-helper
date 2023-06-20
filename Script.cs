@@ -33,8 +33,6 @@ namespace VMS.TPS
             return;
         }
 
-        var logger = new AppLogger.Logger();
-        logger.Log("hi");
 
         PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
         if (plan.PlanType != PlanType.ExternalBeam)

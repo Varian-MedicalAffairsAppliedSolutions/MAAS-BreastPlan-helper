@@ -27,21 +27,8 @@ using System.Collections;
 using System.Windows.Controls;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
-
-// Anthony Note fix
-
-// TODO
-
-
-// 3. Display PTV volume, in combobox ptv selection
-
-// 4. PTV button unchecked error
-
-
-
-// =============================================
-// 8. Stretch content to reach bottom of screen
-
+using Serilog;
+using Serilog.Events;
 
 
 
@@ -198,11 +185,27 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         private string JsonPath { get; set; }  // Path to config file\
 
-       
+        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            // Close the log when the program exits
+            Log.CloseAndFlush();
+        }
 
 
         public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path) 
         {
+            var json_dir = Path.GetDirectoryName(json_path);
+            var log_path = Path.Combine(json_dir, "log.txt");
+
+            // Close the log when the program exits
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+
+            // Setup logging
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File(log_path, rollingInterval: RollingInterval.Day) // Log messages to a file
+                .MinimumLevel.Debug() // Set the minimum log level (e.g., Debug, Information, Error)
+                .CreateLogger();
+
             SepIso = 0;
             SepIsoEdge = 0;
             //SepDmaxEdgeAfterOpt = 0;
@@ -322,6 +325,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 await UpdateListBox($"Starting autoplan. Debug = {Settings.Debug}");
                 await UpdateListBox("Checking two-field plan parameters");
             }
+            Log.Debug($"Starting autoplan. Debug = {Settings.Debug}");
+            Log.Debug("Checking two-field plan parameters");
             
 
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
@@ -362,6 +367,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
 
             if (Settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
+            Log.Debug("All checks passed, copying to new plan");
 
             // Copy plan and set new name
             var NewPlan = Context.Course.CopyPlanSetup(Plan) as ExternalPlanSetup;
@@ -371,6 +377,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, Plan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
 
             if (Settings.Debug) { await UpdateListBox($"New plan created with id {NewPlan.Id}"); }
+            Log.Debug($"New plan created with id {NewPlan.Id}");
 
             // Check if there is a PTV
             var CopiedSS = NewPlan.StructureSet;
@@ -382,11 +389,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
 
             if (Settings.Debug) { await UpdateListBox($"Set dose normalization to global max"); }
+            Log.Debug($"Set dose normalization to global max");
+
             var maxBodyDose = Plan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
             NewPlan.PlanNormalizationValue = maxBodyDose.Dose;
 
             //var DM3D = NewPlan.Dose.DoseMax3D;
             if (Settings.Debug) { await UpdateListBox($"Dose calculation finished"); }
+            Log.Debug("Dose calculation finished");
 
             // Delete existing opt structures
             var optStructsOld = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
@@ -402,6 +412,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 //await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
                 PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
                 if (Settings.Debug) { await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC"); }
+                Log.Debug($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
             }
 
             else
@@ -409,6 +420,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 
                 PTV_OPT.SegmentVolume = SelectedPTV.SegmentVolume;
                 if (Settings.Debug) { await UpdateListBox($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC"); }
+                Log.Debug($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC");
             }
 
 
@@ -440,6 +452,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // Apply margin again
             IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
             if (Settings.Debug) { await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC"); }
+            Log.Debug($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC");
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -448,7 +461,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
 
-            if (Settings.Debug) { await UpdateListBox($"optOptions created"); }
 
             var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
             string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
@@ -523,8 +535,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Optimize
             if (Settings.Debug) { await UpdateListBox($"Starting initial pass"); }
+            Log.Debug("Starting initial pass");
             NewPlan.Optimize(opt);
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
+            Log.Debug("Finished initial pass");
 
 
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
@@ -537,6 +551,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.SecondOpt)
             {
                 if (Settings.Debug) { await UpdateListBox("Starting second pass"); }
+                Log.Debug("Starging second pass");
                 // Create hot and cold spotes
                 Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
                 coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
@@ -559,6 +574,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 NewPlan.CalculateDose();
 
                 if (Settings.Debug) { await UpdateListBox("Finished second pass"); }
+                Log.Debug("Finished second pass");
 
             }
 
@@ -569,6 +585,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             }
 
             if (Settings.Debug) { await UpdateListBox("Complete. Close window to view plan."); }
+            Log.Debug("Complete. Close window to view plan");
 
             MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
         }
@@ -606,6 +623,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //StatusBox.ScrollIntoView(s);
             await Task.Delay(500);
         }
+
 
     }
 }
