@@ -29,11 +29,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
 using Serilog;
 using Serilog.Events;
-
-
-
-
-
+using System.Net;
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
@@ -540,6 +536,17 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
             Log.Debug("Finished initial pass");
 
+            // Dose level check
+            DoseValue HotSpotIDL = new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent);
+            if (HotSpotIDL > NewPlan.Dose.DoseMax3D)
+            {
+                var msg = $"Warning: HotspotIDL from config {Settings.HotSpotIDL} is greater than 3D dose max: {NewPlan.Dose.DoseMax3D.Dose}";
+                if (Settings.Debug) { await UpdateListBox(msg); }
+                Log.Debug(msg);
+
+                HotSpotIDL = NewPlan.Dose.DoseMax3D * 0.95;
+            }
+
 
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
             NewPlan.CalculateLeafMotions();
@@ -547,6 +554,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.CalculateDose();
 
             SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, selectedBreastSide, NewPlan.Dose.DoseMax3DLocation.z);
+
 
             if (Settings.SecondOpt)
             {
@@ -558,7 +566,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
 
                 Structure hotSpot = CopiedSS.AddStructure("DOSE_REGION", "__hotSpot");
-                hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent));
+                hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, HotSpotIDL);
 
                 // Add objectives for hot and cold spot
                 //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
