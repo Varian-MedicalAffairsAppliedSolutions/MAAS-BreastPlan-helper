@@ -309,7 +309,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
         {
             // Save some properties back to config
             // LMC
-            Settings.HotSpotIDL = MaxDoseGoal;
 
             Settings.LMCModel = joinLMC(LMCModel, LMCVersion);
 
@@ -559,22 +558,28 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.SecondOpt)
             {
                 if (Settings.Debug) { await UpdateListBox("Starting second pass"); }
-                Log.Debug("Starging second pass");
+                Log.Debug("Starting second pass");
                 // Create hot and cold spotes
-                Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
-                coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
-                coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
 
-                Structure hotSpot = CopiedSS.AddStructure("DOSE_REGION", "__hotSpot");
-                hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, HotSpotIDL);
+                if (Settings.HotColdIDLSecondOpt)
+                {
+                    Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
+                    coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
+                    coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
 
-                // Add objectives for hot and cold spot
-                //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
+                    Structure hotSpot = CopiedSS.AddStructure("DOSE_REGION", "__hotSpot");
+                    hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, HotSpotIDL);
 
-                var RxDose_ = Plan.TotalDose;
-                optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
-                optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
-            
+
+                    // Add objectives for hot and cold spot
+                    //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
+
+                    var RxDose_ = Plan.TotalDose;
+                    optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
+                    optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
+
+                }
+
                 NewPlan.Optimize(opt);
          
                 NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
