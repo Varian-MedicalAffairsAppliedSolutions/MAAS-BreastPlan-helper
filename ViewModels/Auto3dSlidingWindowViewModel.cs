@@ -21,6 +21,15 @@ using System.Numerics;
 using System.Xml.Linq;
 
 /*
+ * Pass on of Ryan's requests complete
+ * Still to do:
+ * (maybe in 16.1) Add check for valid leaf motion calculator name
+ * 1. (DIFFICULT, DO LATER) Post processing of IDL structures: Keep largest part (2D-All)
+- use getImageContour on each plane, retain largest delete others - dont delete if it's a hole
+- returns an array for each contour
+ * */
+
+/*
 Priority 1.
 1. DONE - Rx of final copied plan defaults to 2Gy X 25 (Final plan Rx needs to match starting plan Rx) 
 2. DONE - Automatically calculate dose if not present (instead of just throwing exception)
@@ -35,15 +44,7 @@ Priority 2.
    than opening and closing the script multiple times to find one new issue with each crash.
 2. TEST - Add check if new generated plan name will exceed max characters
 3. TEST - Add check if MLC is missing
-4. (maybe in 16.1) Add check for valid leaf motion calculator name
-5. Add check if generated structures already exist. Provide option if they do exist to skip structure generation step and use existing structures for optimization
-
- 
-Priority 3.
-1. (DIFFICULT, DO LATER) Post processing of IDL structures: Keep largest part (2D-All)
-- use getImageContour on each plane, retain largest delete others - dont delete if it's a hole
-- returns an array for each contour
-
+5. TEST - Add check if generated structures already exist. Provide option if they do exist to skip structure generation step and use existing structures for optimization
 
 Priority 4.
 1. TEST - To add to this: another bug that has been causing issues is when existing optimization objectives
@@ -218,9 +219,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var message = "";
             var warn_msg = "";
 
-
-            
-
             if (Patient == null)
             {
                 bPrecheckPass = false;
@@ -254,24 +252,15 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     bShowWarn = true;
                     warn_msg += $"Warning: The initial plan contains {bm.Boluses.Count()} boluses on beam {bm.Id}.\n These can\n't be copied to the new plan for optimization.";
                 }
-            }
 
-            // Check dose
-            var bHasDose = Plan.Dose != null;
-            if (!bHasDose)
-            {
-                var msg = "No dose on initial plan. Calculating, please wait ...";
-                Log.Debug(msg);
-
-                var result = Plan.CalculateDose();
-
-                if(!result.Success) {
-                    bPrecheckPass= false;
-                    message += $"Calculation failed: {result}\n";
+                if (bm.MLC == null)
+                {
+                    bPrecheckPass = false;
+                    message += $"Error: MLC for beam {bm.Id} is null\n";
                 }
-
-                Log.Debug("Dose calc on initial plan successful");
             }
+
+            
 
             // TODO: find better gantry diff function
             // Check the beams are > 160 deg apart
@@ -306,6 +295,24 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (!bPrecheckPass)
             {
                 throw new Exception($"The following prechecks did not pass, please resolve and try again:\n{message}");
+            }
+
+            // Check dose last since that is dependant on other steps
+            var bHasDose = Plan.Dose != null;
+            if (!bHasDose)
+            {
+                var msg = "No dose on initial plan. Calculating, please wait ...";
+                Log.Debug(msg);
+
+                var result = Plan.CalculateDose();
+
+                if (!result.Success)
+                {
+                    bPrecheckPass = false;
+                    message += $"Calculation failed: {result}\n";
+                }
+
+                Log.Debug("Dose calc on initial plan successful");
             }
 
             //if (Settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
@@ -398,6 +405,25 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // 3. Select heart
         }
 
+        private Structure AddStructIfNotExists(string name, StructureSet ss, ExternalPlanSetup plan, DoseValue dv, bool warnOnExist)
+        {
+            var existing = ss.Structures.Where(st => st.Id == name).ToList();
+
+            if (existing.Count() == 0)
+            {
+                Structure s = ss.AddStructure("DOSE_REGION", name);
+                s.ConvertDoseLevelToStructure(plan.Dose, dv);
+                return s;
+            }
+
+            if(warnOnExist)
+            {
+                MessageBox.Show($"Warning: optimization structure {name} already exists.");
+            }
+
+            return existing.FirstOrDefault();     
+        }
+
         private void OnCustomPTV_Click()
         {
             if (customPTV)
@@ -486,25 +512,17 @@ namespace MAAS_BreastPlan_helper.ViewModels
             }
 
             // Create 70 - 95% Isodose level structures
-            Structure IDL75 = CopiedSS.AddStructure("DOSE_REGION", "__IDL75");
-            IDL75.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(75, DoseUnit.Percent));
-
-            Structure IDL80 = CopiedSS.AddStructure("DOSE_REGION", "__IDL80");
-            IDL80.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(80, DoseUnit.Percent));
-
-            Structure IDL85 = CopiedSS.AddStructure("DOSE_REGION", "__IDL85"); 
-            IDL85.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(85, DoseUnit.Percent));
-
-            Structure IDL90 = CopiedSS.AddStructure("DOSE_REGION", "__IDL90"); 
-            IDL90.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(90, DoseUnit.Percent));
-
-            Structure IDL95 = CopiedSS.AddStructure("DOSE_REGION", "__IDL95"); 
-            IDL95.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(95, DoseUnit.Percent));
-         
+            //Structure IDL75 = CopiedSS.AddStructure("DOSE_REGION", "__IDL75");
+            //IDL75.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(75, DoseUnit.Percent));
+            foreach (var idl in new double[] {75, 80, 85, 90, 95 }) {
+                AddStructIfNotExists($"__IDL{idl}", CopiedSS, NewPlan, new DoseValue(idl, DoseUnit.Percent), true);
+            }
+            
             // Spare heart and lung on PTV
             Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
 
             // Apply margin again
+            var IDL90 = CopiedSS.Structures.Where(st => st.Id == "__IDL90").FirstOrDefault();
             IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
             if (Settings.Debug) { await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC"); }
             Log.Debug($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC");
@@ -621,14 +639,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 // Create hot and cold spotes
 
                 if (Settings.HotColdIDLSecondOpt)
-                {
-                    Structure coldSpot = CopiedSS.AddStructure("DOSE_REGION", "__coldSpot");
-                    coldSpot.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent));
+                { 
+                    var coldSpot = AddStructIfNotExists("__coldSpot", CopiedSS, NewPlan, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent), true);
                     coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
 
-                    Structure hotSpot = CopiedSS.AddStructure("DOSE_REGION", "__hotSpot");
-                    hotSpot.ConvertDoseLevelToStructure(NewPlan.Dose, HotSpotIDL);
-
+                    var hotSpot = AddStructIfNotExists("__hotSpot", CopiedSS, NewPlan, new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent), true);
 
                     // Add objectives for hot and cold spot
                     //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
