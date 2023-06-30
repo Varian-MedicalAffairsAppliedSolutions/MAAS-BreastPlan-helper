@@ -601,10 +601,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
             Log.Debug("Finished initial pass");
 
-            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            NewPlan.CalculateLeafMotions();
-            NewPlan.CalculateDose();
-
             // Dose level check
             DoseValue HotSpotIDL = new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent);
             if (HotSpotIDL > NewPlan.Dose.DoseMax3D)
