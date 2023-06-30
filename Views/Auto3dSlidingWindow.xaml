@@ -60,7 +60,7 @@
                 </ComboBox>
                 <ComboBox ItemsSource="{Binding HeartStructures}" DisplayMemberPath="Id" SelectedItem="{Binding Heart}" Grid.Column="2" Grid.Row="4" Margin="0,10,0,10" IsReadOnly="True"/>
 
-                <TextBlock Text="{Binding SelectedEnergy}" Grid.Column="2" Grid.Row="5" Foreground="Black" FontWeight="Bold" Margin="0,3,0,4"/>
+                <TextBlock Text="{Binding SelectedEnergy}" VerticalAlignment="Center" Grid.Column="2" Grid.Row="5" Foreground="Black" FontWeight="Bold" Margin="0,4,0,4"/>
 
                 <TextBox  Grid.Column="2" Grid.Row="7" Text="{Binding LMCModel}" TextAlignment="Left" Margin="0,8,0,8"/>
                 <TextBox  Grid.Column="2" Grid.Row="8" Text="{Binding LMCVersion}" TextAlignment="Left" Margin="0,8,0,8"/>

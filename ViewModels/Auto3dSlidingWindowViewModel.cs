@@ -3,39 +3,61 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using VMS.TPS.Common.Model.API;
 using MAAS_BreastPlan_helper.Models;
-using System.Numerics;
 using VMS.TPS.Common.Model.Types;
-using Prism.Logging;
 using System.Collections.ObjectModel;
 using Prism.Commands;
 using static VMS.TPS.Common.Model.Types.DoseValue;
-using System.Security.Cryptography;
-using System.Xml;
 using static MAAS_BreastPlan_helper.Models.Utils;
-using static MAAS_BreastPlan_helper.ViewModels.BreastAutoDialogViewModel;
-using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
-using MAAS_BreastPlan_helper.Properties;
 using System.IO;
-using System.Collections.Specialized;
-using System.Collections;
-using System.Windows.Controls;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
 using Serilog;
-using Serilog.Events;
-using System.Net;
+using System.ComponentModel;
+using System.Numerics;
+using System.Xml.Linq;
+
+/*
+Priority 1.
+1. DONE - Rx of final copied plan defaults to 2Gy X 25 (Final plan Rx needs to match starting plan Rx) 
+2. DONE - Automatically calculate dose if not present (instead of just throwing exception)
+3. DONE - gives message warning about bolus (? bolus seems to be copied) Bolus is currently not used if attached to the plan.
+   Is it possible to use bolus in the copied plan and during optimization? -- halcyon plan level, TB field level
+
+ 
+Priority 2.
+1. DONE - prechecks automatically with extended exception message as a popup.
+   Create separate button to perform existing checks before starting Auto-Plan. The idea would be to allow the user to see a 
+   comprehensive list of everything that needs to be adjusted in Eclipse rather 
+   than opening and closing the script multiple times to find one new issue with each crash.
+2. TEST - Add check if new generated plan name will exceed max characters
+3. TEST - Add check if MLC is missing
+4. (maybe in 16.1) Add check for valid leaf motion calculator name
+5. Add check if generated structures already exist. Provide option if they do exist to skip structure generation step and use existing structures for optimization
+
+ 
+Priority 3.
+1. (DIFFICULT, DO LATER) Post processing of IDL structures: Keep largest part (2D-All)
+- use getImageContour on each plane, retain largest delete others - dont delete if it's a hole
+- returns an array for each contour
+
+
+Priority 4.
+1. TEST - To add to this: another bug that has been causing issues is when existing optimization objectives
+are in the starting plan (before it is copied). Is it  possible to clear these objectives each time
+the autoplan runs? (before copying the plan and propagating the new objectives).
+
+*/
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
 
     public class Auto3dSlidingWindowViewModel : BindableBase
     {
+        #region class members
         private ScriptContext Context { get; set; }
         private SettingsClass Settings { get; set; }
         private Patient Patient { get; set; }   
@@ -123,7 +145,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
         }
 
 
-
         public ObservableCollection<string> StatusBoxItems { get; set; }
 
         public DelegateCommand CreatePlanCMD { get; set; }
@@ -180,16 +201,123 @@ namespace MAAS_BreastPlan_helper.ViewModels
         public ObservableCollection<Structure> HeartStructures { get; set; }
 
         private string JsonPath { get; set; }  // Path to config file\
-
+        #endregion class members
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             // Close the log when the program exits
             Log.CloseAndFlush();
         }
+        private void Precheck()
+        {
+
+            Patient = Context.Patient;
+            Patient.BeginModifications();
+            // Runs before optimization to ensure the setup is correct and warn if not
+            var bPrecheckPass = true;
+            var bShowWarn = false;
+            var message = "";
+            var warn_msg = "";
 
 
+            
+
+            if (Patient == null)
+            {
+                bPrecheckPass = false;
+                message += "Error: Patient is null\n";
+            }
+
+            Plan = Context.PlanSetup as ExternalPlanSetup;
+            if (Plan == null)
+            {
+                bPrecheckPass = false;
+                message += "Error: Plan is null\n";
+            }
+
+            Log.Debug($"Starting autoplan. Debug = {Settings.Debug}");
+            Log.Debug("Checking two-field plan parameters");
+
+            List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
+            int nrBeams = Beams.Count();
+            //await UpdateListBox("Starting...");
+            if (nrBeams != 2)
+            {
+                bPrecheckPass= false;
+                message += $"Error: Must have 2 beams but got {nrBeams}\n";
+            }
+
+            foreach(var bm in Beams)
+            {
+                // Check if the inital plan has boluses
+                if (bm.Boluses.Count() > 0)
+                {
+                    bShowWarn = true;
+                    warn_msg += $"Warning: The initial plan contains {bm.Boluses.Count()} boluses on beam {bm.Id}.\n These can\n't be copied to the new plan for optimization.";
+                }
+            }
+
+            // Check dose
+            var bHasDose = Plan.Dose != null;
+            if (!bHasDose)
+            {
+                var msg = "No dose on initial plan. Calculating, please wait ...";
+                Log.Debug(msg);
+
+                var result = Plan.CalculateDose();
+
+                if(!result.Success) {
+                    bPrecheckPass= false;
+                    message += $"Calculation failed: {result}\n";
+                }
+
+                Log.Debug("Dose calc on initial plan successful");
+            }
+
+            // TODO: find better gantry diff function
+            // Check the beams are > 160 deg apart
+            var ganDiff = Math.Abs(Beams.First().ControlPoints.First().GantryAngle - Beams.Last().ControlPoints.First().GantryAngle);
+            if (ganDiff < 160)
+            {
+                bPrecheckPass= false;
+                message += "Error: Gantry angle difference is greater than 160 degrees\n";
+            }
+
+            var bAreSameEnergy = Beams.First().EnergyModeDisplayName == Beams.Last().EnergyModeDisplayName;
+            if (!bAreSameEnergy)
+            {
+                bPrecheckPass= false;
+                message += "Error: Beams are not same energy\n";
+            }
+
+            // Check that the field weights sum to 1
+            var weightSum = Beams.Select(b => b.WeightFactor).Sum();
+            if (weightSum != 1)
+            {
+                bPrecheckPass= false;
+                message += $"Error: Beam weights don't sum to 1: {weightSum}\n";
+            }
+
+            if (bShowWarn)
+            {
+                MessageBox.Show(warn_msg);
+            }
+
+            // Finally show Error message
+            if (!bPrecheckPass)
+            {
+                throw new Exception($"The following prechecks did not pass, please resolve and try again:\n{message}");
+            }
+
+            //if (Settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
+            Log.Debug("All checks passed, copying to new plan");
+        }
         public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path) 
         {
+            Context = context;
+            Settings = settings;
+            JsonPath = json_path;
+            Precheck();
+
             var json_dir = Path.GetDirectoryName(json_path);
             var log_path = Path.Combine(json_dir, "log.txt");
 
@@ -204,33 +332,19 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             SepIso = 0;
             SepIsoEdge = 0;
-            //SepDmaxEdgeAfterOpt = 0;
-
-            Context = context;
-            Settings = settings;
-            JsonPath = json_path;
-
-            Patient = Context.Patient;
-            Patient.BeginModifications();
-
-            if (Patient == null)
-            {
-                throw new Exception("Patient is null");
-            }
-
-            Plan = Context.PlanSetup as ExternalPlanSetup;
-
-            if (Plan == null) { 
-                throw new Exception("Plan is null");
-            }
 
             CreatePlanCMD = new DelegateCommand(OnCreateBreastPlanAsync);
 
             StatusBoxItems = new ObservableCollection<string>();
 
+            // Initialize observable collections        
+            var ss = Plan.StructureSet;
+            if (ss == null) { throw new Exception("Structure set is null"); }
+            var structs = plan.StructureSet.Structures;
+            if (structs == null) { throw new Exception("Structures are null"); }
+            var lHeartStructures = structs.Where(s => s.Id.ToLower().Contains("heart")).ToList();
+            if (lHeartStructures.Count == 0) { throw new Exception("Heart structures are empty"); }
 
-            // Initialize observable collections
-            var lHeartStructures = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("heart")).ToList();
             HeartStructures = new ObservableCollection<Structure>();
             foreach (var structure in lHeartStructures) { HeartStructures.Add(structure); }
             Heart = HeartStructures.FirstOrDefault();
@@ -251,8 +365,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             {
                 Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
             }
-            
-            
 
             MaxDoseGoal = settings.MaxDoseGoal;
             
@@ -275,7 +387,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             CbCustomPTV_Click = new DelegateCommand(OnCustomPTV_Click);
 
-
             var body = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
 
             SepIso = Utils.ComputeBeamSeparation(Plan.Beams.First(), Plan.Beams.Last(), body); // center of field iso plane
@@ -285,7 +396,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // 1. Breast side,
             // 2. Ipsilateral lung,
             // 3. Select heart
-
         }
 
         private void OnCustomPTV_Click()
@@ -312,57 +422,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             Settings.LMCModel = joinLMC(LMCModel, LMCVersion);
 
-
             File.WriteAllText(JsonPath, JsonConvert.SerializeObject(Settings));
-
-            if (Settings.Debug)
-            {
-                await UpdateListBox($"Starting autoplan. Debug = {Settings.Debug}");
-                await UpdateListBox("Checking two-field plan parameters");
-            }
-            Log.Debug($"Starting autoplan. Debug = {Settings.Debug}");
-            Log.Debug("Checking two-field plan parameters");
-            
-
-            List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
-            int nrBeams = Beams.Count();
-            //await UpdateListBox("Starting...");
-            if (nrBeams != 2)
-            {
-                throw new Exception($"Must have 2 beams but got {nrBeams}");
-            }
-
-            // Check dose
-            var bHasDose = Plan.Dose != null;
-            if (!bHasDose)
-            {
-                throw new Exception("Error no dose!");
-            }
-
-            // TODO: find better gantry diff function
-            // Check the beams are > 160 deg apart
-            var ganDiff = Math.Abs(Beams.First().ControlPoints.First().GantryAngle - Beams.Last().ControlPoints.First().GantryAngle);
-            if (ganDiff < 160)
-            {
-                throw new Exception("Gantry angle difference is greater than 160 degrees");
-            }
-
-            var bAreSameEnergy = Beams.First().EnergyModeDisplayName == Beams.Last().EnergyModeDisplayName;
-            if (!bAreSameEnergy)
-            {
-                throw new Exception("Beams are not same energy");
-            }
-
-            // Check that the field weights sum to 1
-            var weightSum = Beams.Select(b => b.WeightFactor).Sum();
-            if (weightSum != 1)
-            {
-                throw new Exception($"Beam weights don't sum to 1: {weightSum}");
-            }
-
-
-            if (Settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
-            Log.Debug("All checks passed, copying to new plan");
 
             // Copy plan and set new name
             var NewPlan = Context.Course.CopyPlanSetup(Plan) as ExternalPlanSetup;
@@ -381,7 +441,9 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // Perform dose calc
             NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
             NewPlan.CalculateDose();
-            NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
+
+            NewPlan.SetPrescription((int)Plan.NumberOfFractions, Plan.DosePerFraction, Plan.TreatmentPercentage);
+            //REM: NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
 
             if (Settings.Debug) { await UpdateListBox($"Set dose normalization to global max"); }
             Log.Debug($"Set dose normalization to global max");
@@ -418,7 +480,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 Log.Debug($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC");
             }
 
-
             if (PTV_OPT.Volume < 0.0001)
             {
                 throw new Exception($"Structure volume of PTV opt is too low: {PTV_OPT.Volume:F2} CC");
@@ -439,8 +500,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             Structure IDL95 = CopiedSS.AddStructure("DOSE_REGION", "__IDL95"); 
             IDL95.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(95, DoseUnit.Percent));
-
-           
+         
             // Spare heart and lung on PTV
             Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
 
@@ -497,6 +557,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var optSet = NewPlan.OptimizationSetup;
             var RxDose = Plan.TotalDose;
 
+            // Clear all previous optimization objectives
+            foreach (var oldObjective in optSet.Objectives) {
+                optSet.RemoveObjective(oldObjective);
+                if (Settings.Debug) { await UpdateListBox($"Removed old objective {oldObjective}"); }
+            }
+
             // Add all objectives
             // -- PTV_OPT --: 
             
@@ -535,6 +601,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
             Log.Debug("Finished initial pass");
 
+            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
+            NewPlan.CalculateLeafMotions();
+            NewPlan.CalculateDose();
+
             // Dose level check
             DoseValue HotSpotIDL = new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent);
             if (HotSpotIDL > NewPlan.Dose.DoseMax3D)
@@ -546,14 +616,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 HotSpotIDL = NewPlan.Dose.DoseMax3D * 0.99;
             }
 
-
-            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            NewPlan.CalculateLeafMotions();
-
-            NewPlan.CalculateDose();
-
             SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, selectedBreastSide, NewPlan.Dose.DoseMax3DLocation.z);
-
 
             if (Settings.SecondOpt)
             {
