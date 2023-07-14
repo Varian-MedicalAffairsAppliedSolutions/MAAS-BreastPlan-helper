@@ -524,30 +524,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Apply margin again
             
-            var IDL85 = CopiedSS.Structures.Where(st => st.Id == "__IDL85").FirstOrDefault();
-            IDL85.SegmentVolume = IDL85.AsymmetricMargin(margin);
-            if (Settings.Debug) { await UpdateListBox($"IDL85 add asym margin, vol = {IDL85.Volume:F2} CC"); }
-            Log.Debug($"IDL85 add asym margin, vol = {IDL85.Volume:F2} CC");
-
-            var IDL88 = CopiedSS.Structures.Where(st => st.Id == "__IDL88").FirstOrDefault();
-            IDL88.SegmentVolume = IDL88.AsymmetricMargin(margin);
-            if (Settings.Debug) { await UpdateListBox($"IDL88 add asym margin, vol = {IDL88.Volume:F2} CC"); }
-            Log.Debug($"IDL88 add asym margin, vol = {IDL88.Volume:F2} CC");
-
-            var IDL91 = CopiedSS.Structures.Where(st => st.Id == "__IDL91").FirstOrDefault();
-            IDL91.SegmentVolume = IDL91.AsymmetricMargin(margin);
-            if (Settings.Debug) { await UpdateListBox($"IDL91 add asym margin, vol = {IDL91.Volume:F2} CC"); }
-            Log.Debug($"IDL91 add asym margin, vol = {IDL91.Volume:F2} CC");
-
-            var IDL94 = CopiedSS.Structures.Where(st => st.Id == "__IDL94").FirstOrDefault();
-            IDL94.SegmentVolume = IDL94.AsymmetricMargin(margin);
-            if (Settings.Debug) { await UpdateListBox($"IDL94 add asym margin, vol = {IDL94.Volume:F2} CC"); }
-            Log.Debug($"IDL94 add asym margin, vol = {IDL94.Volume:F2} CC");
-
-            var IDL97 = CopiedSS.Structures.Where(st => st.Id == "__IDL97").FirstOrDefault();
-            IDL97.SegmentVolume = IDL97.AsymmetricMargin(margin);
-            if (Settings.Debug) { await UpdateListBox($"IDL97 add asym margin, vol = {IDL97.Volume:F2} CC"); }
-            Log.Debug($"IDL97 add asym margin, vol = {IDL97.Volume:F2} CC");
+           
+            
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -605,7 +583,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Add all objectives
             // -- PTV_OPT --: 
-            
+
+            // Define IDL strucutures
+            var IDL85 = CopiedSS.Structures.Where(st => st.Id == "__IDL85").FirstOrDefault();            
+            var IDL88 = CopiedSS.Structures.Where(st => st.Id == "__IDL88").FirstOrDefault();       
+            var IDL91 = CopiedSS.Structures.Where(st => st.Id == "__IDL91").FirstOrDefault();        
+            var IDL94 = CopiedSS.Structures.Where(st => st.Id == "__IDL94").FirstOrDefault();       
+            var IDL97 = CopiedSS.Structures.Where(st => st.Id == "__IDL97").FirstOrDefault();
 
             if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
             optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Mean, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
