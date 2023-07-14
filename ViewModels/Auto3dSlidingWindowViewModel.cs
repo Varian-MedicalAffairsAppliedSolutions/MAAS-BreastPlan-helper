@@ -511,10 +511,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 throw new Exception($"Structure volume of PTV opt is too low: {PTV_OPT.Volume:F2} CC");
             }
 
-            // Create 70 - 95% Isodose level structures
-            //Structure IDL75 = CopiedSS.AddStructure("DOSE_REGION", "__IDL75");
-            //IDL75.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(75, DoseUnit.Percent));
-            foreach (var idl in new double[] {75, 80, 85, 90, 95 }) {
+            // Create 85 - 97% Isodose level structures
+            //Structure IDL85 = CopiedSS.AddStructure("DOSE_REGION", "__IDL85");
+            //IDL85.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(85, DoseUnit.Percent));
+            //Ryan - Changed IDL structures to 85,88, 91, 94, and 97
+            foreach (var idl in new double[] {85, 88, 91, 94, 97 }) {
                 AddStructIfNotExists($"__IDL{idl}", CopiedSS, NewPlan, new DoseValue(idl, DoseUnit.Percent), true);
             }
             
@@ -522,10 +523,31 @@ namespace MAAS_BreastPlan_helper.ViewModels
             Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
 
             // Apply margin again
-            var IDL90 = CopiedSS.Structures.Where(st => st.Id == "__IDL90").FirstOrDefault();
-            IDL90.SegmentVolume = IDL90.AsymmetricMargin(margin);
-            if (Settings.Debug) { await UpdateListBox($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC"); }
-            Log.Debug($"IDL90 add asym margin, vol = {IDL90.Volume:F2} CC");
+            
+            var IDL85 = CopiedSS.Structures.Where(st => st.Id == "__IDL85").FirstOrDefault();
+            IDL85.SegmentVolume = IDL85.AsymmetricMargin(margin);
+            if (Settings.Debug) { await UpdateListBox($"IDL85 add asym margin, vol = {IDL85.Volume:F2} CC"); }
+            Log.Debug($"IDL85 add asym margin, vol = {IDL85.Volume:F2} CC");
+
+            var IDL88 = CopiedSS.Structures.Where(st => st.Id == "__IDL88").FirstOrDefault();
+            IDL88.SegmentVolume = IDL88.AsymmetricMargin(margin);
+            if (Settings.Debug) { await UpdateListBox($"IDL88 add asym margin, vol = {IDL88.Volume:F2} CC"); }
+            Log.Debug($"IDL88 add asym margin, vol = {IDL88.Volume:F2} CC");
+
+            var IDL91 = CopiedSS.Structures.Where(st => st.Id == "__IDL91").FirstOrDefault();
+            IDL91.SegmentVolume = IDL91.AsymmetricMargin(margin);
+            if (Settings.Debug) { await UpdateListBox($"IDL91 add asym margin, vol = {IDL91.Volume:F2} CC"); }
+            Log.Debug($"IDL91 add asym margin, vol = {IDL91.Volume:F2} CC");
+
+            var IDL94 = CopiedSS.Structures.Where(st => st.Id == "__IDL94").FirstOrDefault();
+            IDL94.SegmentVolume = IDL94.AsymmetricMargin(margin);
+            if (Settings.Debug) { await UpdateListBox($"IDL94 add asym margin, vol = {IDL94.Volume:F2} CC"); }
+            Log.Debug($"IDL94 add asym margin, vol = {IDL94.Volume:F2} CC");
+
+            var IDL97 = CopiedSS.Structures.Where(st => st.Id == "__IDL97").FirstOrDefault();
+            IDL97.SegmentVolume = IDL97.AsymmetricMargin(margin);
+            if (Settings.Debug) { await UpdateListBox($"IDL97 add asym margin, vol = {IDL97.Volume:F2} CC"); }
+            Log.Debug($"IDL97 add asym margin, vol = {IDL97.Volume:F2} CC");
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -585,12 +607,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // -- PTV_OPT --: 
             
 
-            if (Settings.Debug) { await UpdateListBox("Creating upper 10 % Volume, 105 % Rx Dose – Priority 120"); }
-            optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
-
-            // - Upper 30 % Volume, 103 % Rx Dose – Priority 110
-            if (Settings.Debug) { await UpdateListBox("Creating upper 30 % Volume, 103 % Rx Dose – Priority 110"); }
-            optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 30, 110);
+            if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
+            optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Mean, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
             ////await UpdateListBox($"Added 2");
             // - Lower 95 % Volume, 100 % Rx Dose – Priority 135
             if (Settings.Debug) { await UpdateListBox("Creating lower 95 % Volume, 100 % Rx Dose – Priority 135"); }
@@ -605,11 +623,35 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox("Creating upper 0 % Volume, 108 % Rx Dose – Priority 200"); }
             optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal / 100) - 0.01) * RxDose.Dose, RxDose.Unit), 0, 200);
             ////await UpdateListBox($"Added 5");
-            // -- 90 % IDL structure --
-            // - Upper 5 % Volume, 103 % Rx Dose – Priority 140
-            if (Settings.Debug) { await UpdateListBox("Creating upper 5 % Volume, 103 % Rx Dose – Priority 140"); }
-            optSet.AddPointObjective(IDL90, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 5, 140);
+            // -- 91 % IDL structure --
+            // - Upper 0 % Volume, 103 % Rx Dose – Priority 141
+            if (Settings.Debug) { await UpdateListBox("Creating upper  5% Volume, 103 % Rx Dose – Priority 141"); }
+            optSet.AddPointObjective(IDL91, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 0, 141);
             ////await UpdateListBox($"Added 6");
+            // -- 94 % IDL structure --
+            // - Upper 0 % Volume, 102 % Rx Dose – Priority 143
+            if (Settings.Debug) { await UpdateListBox("Creating upper  0% Volume, 102 % Rx Dose – Priority 143"); }
+            optSet.AddPointObjective(IDL94, OptimizationObjectiveOperator.Upper, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 0, 143);
+            // -- 97 % IDL structure --
+            // - Upper 0 % Volume, 102 % Rx Dose – Priority 145
+            if (Settings.Debug) { await UpdateListBox("Creating upper  0% Volume, 102 % Rx Dose – Priority 145"); }
+            optSet.AddPointObjective(IDL97, OptimizationObjectiveOperator.Upper, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 0, 145);
+            // -- 88 % IDL structure --
+            // - Upper 20 % Volume, 103 % Rx Dose – Priority 118
+            if (Settings.Debug) { await UpdateListBox("Creating upper  20% Volume, 103 % Rx Dose – Priority 118"); }
+            optSet.AddPointObjective(IDL88, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 20, 118);
+            // -- 88 % IDL structure --
+            // - Upper 6 % Volume, 105 % Rx Dose – Priority 122
+            if (Settings.Debug) { await UpdateListBox("Creating upper  6% Volume, 105 % Rx Dose – Priority 122"); }
+            optSet.AddPointObjective(IDL88, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 6, 122);
+            // -- 85 % IDL structure --
+            // - Upper 25 % Volume, 103 % Rx Dose – Priority 115
+            if (Settings.Debug) { await UpdateListBox("Creating upper  25% Volume, 103 % Rx Dose – Priority 115"); }
+            optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 25, 115);
+            // -- 85 % IDL structure --                    
+            // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
+            if (Settings.Debug) { await UpdateListBox("Creating upper  10% Volume, 105 % Rx Dose – Priority 120"); }
+            optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
             ////await UpdateListBox("Created objectives. Starting optimization...");
 
             // Optimize
