@@ -589,8 +589,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             var IDL94 = CopiedSS.Structures.Where(st => st.Id == "__IDL94").FirstOrDefault();       
             var IDL97 = CopiedSS.Structures.Where(st => st.Id == "__IDL97").FirstOrDefault();
 
+            //if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
+            //optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator , new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
+
             if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
-            optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Mean, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
+            optSet.AddMeanDoseObjective(PTV_OPT, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
             ////await UpdateListBox($"Added 2");
             // - Lower 95 % Volume, 100 % Rx Dose – Priority 135
             if (Settings.Debug) { await UpdateListBox("Creating lower 95 % Volume, 100 % Rx Dose – Priority 135"); }
