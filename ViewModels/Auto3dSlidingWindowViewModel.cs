@@ -16,9 +16,7 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Text.RegularExpressions;
 using Serilog;
-using System.ComponentModel;
-using System.Numerics;
-using System.Xml.Linq;
+
 
 /*
  * Pass on of Ryan's requests complete
@@ -618,6 +616,16 @@ namespace MAAS_BreastPlan_helper.ViewModels
             NewPlan.Optimize(opt);
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
             Log.Debug("Finished initial pass");
+
+            // Calculate dose after first optimization
+            if (Settings.Debug) { await UpdateListBox($"Calc'ing dose"); }
+            Log.Debug("Calc'ing dose");
+            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
+            NewPlan.CalculateLeafMotions();
+            NewPlan.CalculateDose();
+            // Calculate dose after first optimization
+            if (Settings.Debug) { await UpdateListBox($"Finished calc'ing dose"); }
+            Log.Debug("Finished calc'ing dose");
 
             // Dose level check
             DoseValue HotSpotIDL = new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent);
