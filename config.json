@@ -8,5 +8,6 @@
   "HotSpotIDL": 105,
   "SecondOpt": true,
   "Cleanup": false,
-  "HotColdIDLSecondOpt": false
+  "HotColdIDLSecondOpt": false,
+  "FixedJaws":  true
 }

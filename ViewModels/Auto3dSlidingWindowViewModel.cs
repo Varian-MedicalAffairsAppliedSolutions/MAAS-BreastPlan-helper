@@ -49,6 +49,20 @@ Priority 4.
 are in the starting plan (before it is copied). Is it  possible to clear these objectives each time
 the autoplan runs? (before copying the plan and propagating the new objectives).
 
+// TODO 7.17
+1. Fix Jaws: Syntax - public bool FixedJaws { get; } 
+
+2. Set Fluence Smoothing factors: 80 (X) and 60 (Y): Syntax - public double SmoothX { get; } & public double SmoothY { get; }
+
+3. Turn off NTO or set priority to zero (whichever is easiest): Syntax - public OptimizationNormalTissueParameter AddNormalTissueObjective(
+    double priority,
+    double distanceFromTargetBorderInMM,
+    double startDosePercentage,
+    double endDosePercentage,
+    double fallOff
+)
+
+has context menu
 */
 
 namespace MAAS_BreastPlan_helper.ViewModels
@@ -650,7 +664,9 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox($"Calc'ing dose"); }
             Log.Debug("Calc'ing dose");
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            NewPlan.CalculateLeafMotions();
+
+            var lmcOptions = new LMCVOptions(Settings.FixedJaws);
+            NewPlan.CalculateLeafMotions(lmcOptions);
             NewPlan.CalculateDose();
             // Calculate dose after first optimization
             if (Settings.Debug) { await UpdateListBox($"Finished calc'ing dose"); }
@@ -692,9 +708,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 }
 
                 NewPlan.Optimize(opt);
-         
                 NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-                NewPlan.CalculateLeafMotions();
+                NewPlan.CalculateLeafMotions(lmcOptions);
                 NewPlan.CalculateDose();
 
                 if (Settings.Debug) { await UpdateListBox("Finished second pass"); }

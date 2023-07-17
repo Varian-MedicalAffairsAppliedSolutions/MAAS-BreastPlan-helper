@@ -24,6 +24,7 @@ namespace MAAS_BreastPlan_helper
             public bool Cleanup { get; set; }
 
             public double MaxDoseGoal { get; set; }
+            public bool FixedJaws { get; internal set; }
         }
     }
 }
