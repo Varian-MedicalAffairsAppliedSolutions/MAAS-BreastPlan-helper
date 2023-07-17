@@ -10,6 +10,10 @@ namespace MAAS_BreastPlan_helper
     {
         public class SettingsClass
         {
+            public double smoothX { get; set; }
+
+            public double smoothY { get; set; }
+
             public bool HotColdIDLSecondOpt { get; set; }
             public bool Debug { get; set; }
             public bool Validated { get; set; }

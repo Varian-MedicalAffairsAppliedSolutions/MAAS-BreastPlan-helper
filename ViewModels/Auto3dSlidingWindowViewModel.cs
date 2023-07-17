@@ -534,10 +534,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // Spare heart and lung on PTV
             Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
 
-            // Apply margin again
-            
-           
-            
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -545,6 +541,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationConvergenceOption.TerminateIfConverged,
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
+
+            
 
 
             var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
@@ -651,7 +649,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
             if (Settings.Debug) { await UpdateListBox("Creating upper  10% Volume, 105 % Rx Dose – Priority 120"); }
             optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
-            ////await UpdateListBox("Created objectives. Starting optimization...");
+            
+
+            // Add fluence smoothing and fixed jaw (on/off) to all beams
+            foreach (var bm in NewPlan.Beams.Where(b => !b.IsSetupField).ToList())
+            {
+                optSet.AddBeamSpecificParameter(bm, Settings.smoothX, Settings.smoothY, Settings.FixedJaws);
+            }
 
             // Optimize
             if (Settings.Debug) { await UpdateListBox($"Starting initial pass"); }
