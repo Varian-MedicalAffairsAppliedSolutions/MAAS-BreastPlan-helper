@@ -542,9 +542,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
 
-            
-
-
             var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
             string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
             string energy_mode_id = unpack_getFluenceEnergyMode.Item2;
@@ -604,6 +601,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
             //optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator , new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
 
+            // Zero NTO if settings tell us to
+            if (Settings.KillNormalTissueObjectives)
+            {
+                if (Settings.Debug) { await UpdateListBox("Creating 0 priority NTO objective"); }
+                optSet.AddNormalTissueObjective(0, 0, 0, 0, 0); // This just ensures that the priority of the NTO objective is zero
+            }
+
             if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
             optSet.AddMeanDoseObjective(PTV_OPT, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
             ////await UpdateListBox($"Added 2");
@@ -654,7 +658,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // Add fluence smoothing and fixed jaw (on/off) to all beams
             foreach (var bm in NewPlan.Beams.Where(b => !b.IsSetupField).ToList())
             {
-                optSet.AddBeamSpecificParameter(bm, Settings.smoothX, Settings.smoothY, Settings.FixedJaws);
+                if (Settings.Debug) { await UpdateListBox($"{bm.Id}: Setting fluence smoothing factors {Settings.SmoothX} / {Settings.SmoothY} | jaws fixed: {Settings.FixedJaws}"); }
+                optSet.AddBeamSpecificParameter(bm, Settings.SmoothX, Settings.SmoothY, Settings.FixedJaws);
             }
 
             // Optimize
@@ -664,13 +669,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
             Log.Debug("Finished initial pass");
 
-            // Calculate dose after first optimization
-            if (Settings.Debug) { await UpdateListBox($"Calc'ing dose"); }
-            Log.Debug("Calc'ing dose");
+            // Calculate leaf motions and dose after first optimization           
             NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-
+            if (Settings.Debug) { await UpdateListBox($"Calc'ing leaf motions with fixed jaws: {Settings.FixedJaws}"); }
             var lmcOptions = new LMCVOptions(Settings.FixedJaws);
             NewPlan.CalculateLeafMotions(lmcOptions);
+
+            if (Settings.Debug) { await UpdateListBox($"Calc'ing dose"); }
+            Log.Debug("Calc'ing dose");
             NewPlan.CalculateDose();
             // Calculate dose after first optimization
             if (Settings.Debug) { await UpdateListBox($"Finished calc'ing dose"); }
