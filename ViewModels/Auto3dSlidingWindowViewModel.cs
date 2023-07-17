@@ -602,10 +602,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator , new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
 
             // Zero NTO if settings tell us to
+            // RC - NTO priority = 0. Other setting values must be > 0. Changed these values to default NTO settings.
             if (Settings.KillNormalTissueObjectives)
             {
                 if (Settings.Debug) { await UpdateListBox("Creating 0 priority NTO objective"); }
-                optSet.AddNormalTissueObjective(0, 0, 0, 0, 0); // This just ensures that the priority of the NTO objective is zero
+                optSet.AddNormalTissueObjective(0, 10, 105, 60, 0.05); // This just ensures that the priority of the NTO objective is zero
             }
 
             if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
