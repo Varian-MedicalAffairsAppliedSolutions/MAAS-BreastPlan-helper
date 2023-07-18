@@ -605,7 +605,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.KillNormalTissueObjectives)
             {
                 if (Settings.Debug) { await UpdateListBox("Creating 0 priority NTO objective"); }
-                optSet.AddNormalTissueObjective(0, 0, 0, 0, 0); // This just ensures that the priority of the NTO objective is zero
+                optSet.AddNormalTissueObjective(0, 1, 1, 1, 1); // This just ensures that the priority of the NTO objective is zero
             }
 
             if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
@@ -653,7 +653,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
             if (Settings.Debug) { await UpdateListBox("Creating upper  10% Volume, 105 % Rx Dose – Priority 120"); }
             optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
-            
 
             // Add fluence smoothing and fixed jaw (on/off) to all beams
             foreach (var bm in NewPlan.Beams.Where(b => !b.IsSetupField).ToList())
