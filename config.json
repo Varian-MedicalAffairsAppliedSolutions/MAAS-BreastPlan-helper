@@ -8,5 +8,9 @@
   "HotSpotIDL": 105,
   "SecondOpt": true,
   "Cleanup": false,
-  "HotColdIDLSecondOpt": false
+  "HotColdIDLSecondOpt": false,
+  "FixedJaws": true,
+  "SmoothX": 80,
+  "SmoothY":  60,
+  "KillNormalTissueObjectives": true
 }

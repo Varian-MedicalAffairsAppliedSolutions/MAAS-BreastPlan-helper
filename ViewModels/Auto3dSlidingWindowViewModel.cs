@@ -49,6 +49,20 @@ Priority 4.
 are in the starting plan (before it is copied). Is it  possible to clear these objectives each time
 the autoplan runs? (before copying the plan and propagating the new objectives).
 
+// TODO 7.17
+1. Fix Jaws: Syntax - public bool FixedJaws { get; } 
+
+2. Set Fluence Smoothing factors: 80 (X) and 60 (Y): Syntax - public double SmoothX { get; } & public double SmoothY { get; }
+
+3. Turn off NTO or set priority to zero (whichever is easiest): Syntax - public OptimizationNormalTissueParameter AddNormalTissueObjective(
+    double priority,
+    double distanceFromTargetBorderInMM,
+    double startDosePercentage,
+    double endDosePercentage,
+    double fallOff
+)
+
+has context menu
 */
 
 namespace MAAS_BreastPlan_helper.ViewModels
@@ -520,10 +534,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // Spare heart and lung on PTV
             Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
 
-            // Apply margin again
-            
-           
-            
 
             // Optimization options
             OptimizationOptionsIMRT opt = new OptimizationOptionsIMRT(1000,
@@ -531,7 +541,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationConvergenceOption.TerminateIfConverged,
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
-
 
             var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
             string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
@@ -592,6 +601,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
             //optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator , new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
 
+            // Zero NTO if settings tell us to
+            // RC - NTO priority = 0. Other setting values must be > 0. Changed these values to default NTO settings.
+            if (Settings.KillNormalTissueObjectives)
+            {
+                if (Settings.Debug) { await UpdateListBox("Creating 0 priority NTO objective"); }
+                optSet.AddNormalTissueObjective(0, 10, 105, 60, 0.05); // This just ensures that the priority of the NTO objective is zero
+            }
+
             if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
             optSet.AddMeanDoseObjective(PTV_OPT, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
             ////await UpdateListBox($"Added 2");
@@ -605,8 +622,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             ////await UpdateListBox($"Added 4");
             // -- Body --
             // - Upper 0 % Volume, 108 % Rx Dose – Priority 200
-            if (Settings.Debug) { await UpdateListBox("Creating upper 0 % Volume, 108 % Rx Dose – Priority 200"); }
-            optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal / 100) - 0.01) * RxDose.Dose, RxDose.Unit), 0, 200);
+            if (Settings.Debug) { await UpdateListBox("Creating upper 0 % Volume, 108 % Rx Dose – Priority 500"); }
+            optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal / 100) - 0.01) * RxDose.Dose, RxDose.Unit), 0, 500);
             ////await UpdateListBox($"Added 5");
             // -- 91 % IDL structure --
             // - Upper 0 % Volume, 103 % Rx Dose – Priority 141
@@ -637,7 +654,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
             if (Settings.Debug) { await UpdateListBox("Creating upper  10% Volume, 105 % Rx Dose – Priority 120"); }
             optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
-            ////await UpdateListBox("Created objectives. Starting optimization...");
+
+            // Add fluence smoothing and fixed jaw (on/off) to all beams
+            foreach (var bm in NewPlan.Beams.Where(b => !b.IsSetupField).ToList())
+            {
+                if (Settings.Debug) { await UpdateListBox($"{bm.Id}: Setting fluence smoothing factors {Settings.SmoothX} / {Settings.SmoothY} | jaws fixed: {Settings.FixedJaws}"); }
+                optSet.AddBeamSpecificParameter(bm, Settings.SmoothX, Settings.SmoothY, Settings.FixedJaws);
+            }
 
             // Optimize
             if (Settings.Debug) { await UpdateListBox($"Starting initial pass"); }
@@ -646,11 +669,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
             Log.Debug("Finished initial pass");
 
-            // Calculate dose after first optimization
+            // Calculate leaf motions and dose after first optimization           
+            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
+            if (Settings.Debug) { await UpdateListBox($"Calc'ing leaf motions with fixed jaws: {Settings.FixedJaws}"); }
+            var lmcOptions = new LMCVOptions(Settings.FixedJaws);
+            NewPlan.CalculateLeafMotions(lmcOptions);
+
             if (Settings.Debug) { await UpdateListBox($"Calc'ing dose"); }
             Log.Debug("Calc'ing dose");
-            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            NewPlan.CalculateLeafMotions();
             NewPlan.CalculateDose();
             // Calculate dose after first optimization
             if (Settings.Debug) { await UpdateListBox($"Finished calc'ing dose"); }
@@ -686,15 +712,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
 
                     var RxDose_ = Plan.TotalDose;
-                    optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 45);
-                    optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 20);
+                    optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 35);
+                    optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 40);
 
                 }
 
                 NewPlan.Optimize(opt);
-         
                 NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-                NewPlan.CalculateLeafMotions();
+                NewPlan.CalculateLeafMotions(lmcOptions);
                 NewPlan.CalculateDose();
 
                 if (Settings.Debug) { await UpdateListBox("Finished second pass"); }
