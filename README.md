@@ -14,7 +14,7 @@ Skin flash will need to be manually added (for now).
 
 ## Multi Field Beam Placement tab
 ![image](https://github.com/Varian-MedicalAffairsAppliedSolutions/MAAS-BreastPlan-helper/assets/78000769/69df09a9-b0df-4df4-8a70-42ca479082d5)
-
+Featured here: [Rayn K, Clark R, Hoxha K, et al. An IMRT planning technique for treating whole breast or chest wall with regional lymph nodes on Halcyon and Ethos. J Appl Clin Med Phys. 2024;e14295.](https://doi.org/10.1002/acm2.14295)
 This tab expects as a starting condition one open field medial tangent field.  Then the user can update beam angles in multiples of 8 degrees from the initial seed beam to automate the tedious creation of so many fields.  This type of multifield arrangement is often needed when a user wants a VMAT-like dose distribution but desires full control of adding skin flash to tangent oriented fields only. 
 <br>
 <br>
