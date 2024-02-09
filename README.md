@@ -1,5 +1,6 @@
 # MAAS-BreastPlan-helper
 <br>
+Please find the latest precompiled binary version, ready to be used in Eclipse 15.6 and above in the releases section (on the right).
 
 ## Auto 3D sliding window tab
 ![image](https://github.com/Varian-MedicalAffairsAppliedSolutions/MAAS-BreastPlan-helper/assets/78000769/f537bdb0-d666-4242-babf-6839fbd1df2b)
