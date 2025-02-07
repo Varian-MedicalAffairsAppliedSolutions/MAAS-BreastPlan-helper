@@ -24,5 +24,10 @@ namespace MAAS_BreastPlan_helper.Views
         {
             InitializeComponent();
         }
+
+        private void ScrollingListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
     }
 }
