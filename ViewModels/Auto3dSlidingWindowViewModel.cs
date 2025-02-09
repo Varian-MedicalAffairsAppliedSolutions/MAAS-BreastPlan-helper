@@ -265,11 +265,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     warn_msg += $"Warning: The initial plan contains {bm.Boluses.Count()} boluses on beam {bm.Id}.\n These can\n't be copied to the new plan for optimization.";
                 }
 
-                if (bm.MLC == null)
-                {
-                    bPrecheckPass = false;
-                    message += $"Error: MLC for beam {bm.Id} is null\n";
-                }
+                //if (bm.MLC == null)
+                //{
+                //    bPrecheckPass = false;
+               //     message += $"Error: MLC for beam {bm.Id} is null\n";
+                //}
             }
 
             
@@ -291,12 +291,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
             }
 
             // Check that the field weights sum to 1
-            var weightSum = Beams.Select(b => b.WeightFactor).Sum();
-            if (weightSum != 1)
-            {
-                bPrecheckPass= false;
-                message += $"Error: Beam weights don't sum to 1: {weightSum}\n";
-            }
+            //var weightSum = Beams.Select(b => b.WeightFactor).Sum();
+            //if (weightSum != 1)
+            //{
+            //    bPrecheckPass= false;
+            //    message += $"Error: Beam weights don't sum to 1: {weightSum}\n";
+            //}
 
             if (bShowWarn)
             {

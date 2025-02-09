@@ -24,7 +24,6 @@ namespace MAAS_BreastPlan_helper
     /// </summary>
     /// 
 
-    // TODO: make second tab the default
     public partial class MainWindow : Window
     {
         public MainWindow(ScriptContext context, SettingsClass settings, string json_path)
@@ -33,6 +32,7 @@ namespace MAAS_BreastPlan_helper
             EthosAutoBeamTab.Content = new EthosBeamDialog() { DataContext = new EthosBeamDialogViewModel(context) };
             TangAutoPlanTab.Content = new BreastAutoDialog() { DataContext = new BreastAutoDialogViewModel(context, settings) };
             Auto3DSWTab.Content = new Auto3dSlidingWindow() { DataContext = new Auto3dSlidingWindowViewModel(context, settings, json_path) };
+            FluenceExtensionTab.Content = new FluenceExtensionView() { DataContext = new FluenceExtensionViewModel(context, settings) };
         }
     }
 }

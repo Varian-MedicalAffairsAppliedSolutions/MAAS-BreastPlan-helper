@@ -144,17 +144,15 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="VMS.TPS.Common.Model.API">
+      <HintPath>.\VMS.TPS.Common.Model.API.dll</HintPath>
+    </Reference>
+    <Reference Include="VMS.TPS.Common.Model.Types">
+      <HintPath>.\VMS.TPS.Common.Model.Types.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="VMS.TPS.Common.Model.API">
-      <HintPath>C:\Program Files (x86)\Varian\RTM\15.6\esapi\API\VMS.TPS.Common.Model.API.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="VMS.TPS.Common.Model.Types">
-      <HintPath>C:\Program Files (x86)\Varian\RTM\15.6\esapi\API\VMS.TPS.Common.Model.Types.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomControls\ScrollingListBox.cs" />
@@ -162,6 +160,10 @@
     <Compile Include="Models\Utils.cs" />
     <Compile Include="ViewModels\Auto3dSlidingWindowViewModel.cs" />
     <Compile Include="ViewModels\BreastAutoDialogViewModel.cs" />
+    <Compile Include="ViewModels\FluenceExtensionViewModel.cs" />
+    <Compile Include="Views\FluenceExtension.xaml.cs">
+      <DependentUpon>FluenceExtension.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Auto3dSlidingWindow.xaml.cs">
       <DependentUpon>Auto3dSlidingWindow.xaml</DependentUpon>
     </Compile>
@@ -187,6 +189,10 @@
     <Compile Include="Models\SettingsClass.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Views\FluenceExtension.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\Auto3dSlidingWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

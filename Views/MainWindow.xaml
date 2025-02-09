@@ -15,7 +15,10 @@
             <TabControl>
                 <TabItem Name="Auto3DSWTab" Header="Auto 3D Sliding Window" Style="{x:Null}"/>
                 <TabItem Name="TangAutoPlanTab" Header="Tangential Auto Plan" Style="{x:Null}"/>
-                <TabItem Name="EthosAutoBeamTab" Header="Multi Field Beam Placement" Style="{x:Null}" />
+                <TabItem Name="EthosAutoBeamTab" Header="Multi Field Beam Placement" Style="{x:Null}"/>
+                <TabItem Name="FluenceExtensionTab" Header="Fluence Extension" Style="{x:Null}">
+                <ContentPresenter x:Name="FluenceExtensionContent" />
+                </TabItem>
             </TabControl>
 
             <TextBlock Grid.Row="1" Name="Footer" Background="PaleVioletRed">            
