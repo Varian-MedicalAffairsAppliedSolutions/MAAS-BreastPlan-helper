@@ -4,13 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="10" Background="White">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{x:Null}">
+        <StackPanel Margin="10" Background="White" Style="{x:Null}">
             <!-- PTV Structure Selection -->
-            <GroupBox Header="PTV Structure" Margin="5">
+            <GroupBox Header="PTV Structure" Margin="5" Style="{x:Null}">
                 <StackPanel Margin="5">
-                    <TextBlock Text="Select the PTV structure:" FontWeight="Bold" Margin="0,0,0,5" />
-                    <ComboBox ItemsSource="{Binding Structures}" 
+                    <TextBlock Text="Select the PTV structure:" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}" />
+                    <ComboBox ItemsSource="{Binding Structures}" Style="{x:Null}"
                           SelectedItem="{Binding SelectedPTVStructure}" 
                           DisplayMemberPath="Id"
                           Margin="0,0,0,10" />
@@ -18,17 +18,17 @@
             </GroupBox>
 
             <!-- Fluence Parameters -->
-            <GroupBox Header="Fluence Parameters" Margin="5">
+            <GroupBox Header="Fluence Parameters" Margin="5" Style="{x:Null}"> 
                 <StackPanel Margin="5">
                     <!-- Extent -->
-                    <TextBlock Text="Select the extent of the fluence (cm):" FontWeight="Bold" Margin="0,0,0,5" />
-                    <TextBox Text="{Binding FluenceExtent, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBlock Text="Select the extent of the fluence (cm):" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}" />
+                    <TextBox Text="{Binding FluenceExtent, UpdateSourceTrigger=PropertyChanged}" Style="{x:Null}"
                          Margin="0,0,0,10" />
 
                     <!-- Depth -->
-                    <TextBlock Text="Enter the depth of the fluence (cm):" FontWeight="Bold" Margin="0,0,0,5" />
-                    <ComboBox ItemsSource="{Binding FluenceDepthOptions}" 
-                          SelectedItem="{Binding SelectedFluenceDepth}"
+                    <TextBlock Text="Enter the depth of the fluence (cm):" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}"/>
+                    <ComboBox ItemsSource="{Binding FluenceDepthOptions}" Style="{x:Null}"
+                          SelectedItem="{Binding SelectedFluenceDepth}" 
                           Margin="0,0,0,10" />
                 </StackPanel>
             </GroupBox>
@@ -36,14 +36,14 @@
             <!-- Beam Selection -->
             <GroupBox Header="Beam Selection" Margin="5">
                 <StackPanel Margin="5">
-                    <TextBlock Text="Select the beams:" FontWeight="Bold" Margin="0,0,0,5" />
-                    <ListBox ItemsSource="{Binding BeamSelectionItems}" 
+                    <TextBlock Text="Select the beams:" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}"/>
+                    <ListBox ItemsSource="{Binding BeamSelectionItems}" Style="{x:Null}"
                          SelectionMode="Multiple"
                          MaxHeight="200"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"> 
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <CheckBox Content="{Binding BeamId}" 
+                                <CheckBox Content="{Binding BeamId}" Style="{x:Null}"
                                       IsChecked="{Binding IsSelected}"
                                       Margin="2" />
                             </DataTemplate>
@@ -60,13 +60,13 @@
                        Margin="0,5" />
 
                 <Button Content="Confirm" 
-                    Command="{Binding ConfirmSelectionCommand}" 
+                    Command="{Binding ConfirmSelectionCommand}"
                     Height="40" 
                     Margin="0,10,0,5"
                     Background="#007ACC" 
                     Foreground="White">
                     <Button.Style>
-                        <Style TargetType="Button">
+                        <Style TargetType="Button"> 
                             <Style.Triggers>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.5"/>
