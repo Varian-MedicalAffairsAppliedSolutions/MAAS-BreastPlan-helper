@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MAAS_BreastPlan_helper"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="600" d:DesignWidth="800">
     <StackPanel Background="White">
 
         <!--#region Main Body-->
@@ -94,7 +94,7 @@
                     </ComboBox.Resources>
                 </ComboBox>
 
-                <TextBox  Grid.Column="2" Grid.Row="8" Text="{Binding LMCText}">
+                <TextBox  Grid.Column="2" Grid.Row="8" Text="{Binding LMCText}" Style="{x:Null}">
                     
                 </TextBox>
 
@@ -102,7 +102,7 @@
 
                 <!--#region List Boxes-->
 
-                <ListBox ItemsSource="{Binding StatusBoxItems}" Grid.Row="1" Grid.RowSpan="7" Margin="10" Height="325"  Background="#FF3F79B2" Foreground="White" OpacityMask="Gray">
+                <ListBox ItemsSource="{Binding StatusBoxItems}" Grid.Row="1" Grid.RowSpan="7" Margin="10" Height="325"  Background="#FF3F79B2" Foreground="White" OpacityMask="Gray" Style="{x:Null}">
                     <ListBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="2"/>
@@ -164,7 +164,7 @@
                         <RowDefinition/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <CheckBox IsChecked="{Binding CustomPTV}" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" VerticalContentAlignment="Center" Content="Use Customized PTV"  Command="{Binding CbCustomPTV_Click}"/>
+                    <CheckBox IsChecked="{Binding CustomPTV}" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" VerticalContentAlignment="Center" Content="Use Customized PTV"  Command="{Binding CbCustomPTV_Click}" Style="{x:Null}"/>
                     <Label IsEnabled="{Binding LBLPTVEnabled}" Content="PTV ID:" Grid.Column="0" Grid.Row="1" Margin="0,0,10,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontWeight="ExtraBold"/>
                     <ComboBox IsEnabled="{Binding CBOPTVEnabled}" ItemsSource="{Binding PTVItems}" DisplayMemberPath="Id" Grid.Column="1" Grid.Row="1" IsReadOnly="True" Margin="10">
                         <ComboBox.Resources>
@@ -186,8 +186,8 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="btnPlan" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" Margin="10" Padding="10" Content="Begin Auto-Plan" ClickMode="Press" Command="{Binding BtnPlan_Click}" FontWeight="Bold" />
-            <Button x:Name="btnClose" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" Margin="10" Padding="73,10,73,10" Content="Close" ClickMode="Press" FontWeight="Bold" />
+            <Button x:Name="btnPlan" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" Margin="10" Padding="10" Content="Begin Auto-Plan" ClickMode="Press" Command="{Binding BtnPlan_Click}" FontWeight="Bold" Style="{x:Null}"/>
+            <Button x:Name="btnClose" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" Margin="10" Padding="73,10,73,10" Content="Close" ClickMode="Press" FontWeight="Bold" Style="{x:Null}"/>
         </Grid>
 
         <!--#endregion-->

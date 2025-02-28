@@ -6,7 +6,7 @@
              xmlns:metro="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:viewmodels="clr-namespace:MAAS_BreastPlan_helper.ViewModels"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="600" d:DesignWidth="800">
 
     <Grid Background="White">
         <Grid.RowDefinitions>
@@ -35,7 +35,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Status Box -->
-                <ListBox ItemsSource="{Binding StatusBoxItems}" 
+                <ListBox ItemsSource="{Binding StatusBoxItems}" Style="{x:Null}"
                         Grid.Row="0" Grid.RowSpan="5"
                         Grid.Column="0"
                         Margin="10"
@@ -99,16 +99,16 @@
                 <Label Content="Field Edge:" Grid.Column="0" Grid.Row="7" FontWeight="DemiBold" VerticalAlignment="Center" Margin="5"/>
                 <Label Content="Field Edge, Dmax Plane:" Grid.Column="0" Grid.Row="8" FontWeight="DemiBold" VerticalAlignment="Center" Margin="5"/>
 
-                <TextBox Text="{Binding SepIso}" Grid.Column="0" Grid.Row="6" Height="30" VerticalContentAlignment="Center" Margin="5"/>
-                <TextBox Text="{Binding SepIsoEdge}" Grid.Column="0" Grid.Row="7" Height="30" VerticalContentAlignment="Center" Margin="5"/>
-                <TextBox Text="{Binding SepDmaxEdgeAfterOpt}" Grid.Column="0" Grid.Row="8" Height="30" VerticalContentAlignment="Center" Margin="5"/>
+                <TextBox Text="{Binding SepIso}" Grid.Column="0" Grid.Row="6" Height="30" VerticalContentAlignment="Center" Margin="5" Style="{x:Null}"/>
+                <TextBox Text="{Binding SepIsoEdge}" Grid.Column="0" Grid.Row="7" Height="30" VerticalContentAlignment="Center" Margin="5" Style="{x:Null}"/>
+                <TextBox Text="{Binding SepDmaxEdgeAfterOpt}" Grid.Column="0" Grid.Row="8" Height="30" VerticalContentAlignment="Center" Margin="5" Style="{x:Null}"/>
 
                 <!-- LMC Settings -->
-                <TextBox Text="{Binding LMCModel}" Grid.Column="2" Grid.Row="6" Height="30" VerticalContentAlignment="Center" Margin="5"/>
-                <TextBox Text="{Binding LMCVersion}" Grid.Column="2" Grid.Row="7" Height="30" VerticalContentAlignment="Center" Margin="5"/>
+                <TextBox Text="{Binding LMCModel}" Grid.Column="2" Grid.Row="6" Height="30" VerticalContentAlignment="Center" Margin="5" Style="{x:Null}"/>
+                <TextBox Text="{Binding LMCVersion}" Grid.Column="2" Grid.Row="7" Height="30" VerticalContentAlignment="Center" Margin="5" Style="{x:Null}"/>
 
                 <!-- PTV Settings -->
-                <CheckBox Grid.Row="8" Grid.Column="1" 
+                <CheckBox Grid.Row="8" Grid.Column="1" Style="{x:Null}"
                          IsChecked="{Binding CustomPTV}"
                          Content="Use Customized PTV"
                          Command="{Binding CbCustomPTV_Click}"
@@ -125,14 +125,14 @@
                        Grid.Row="9" Grid.Column="1"
                        FontWeight="DemiBold" VerticalAlignment="Center" Margin="5"/>
 
-                <TextBox Text="{Binding MaxDoseGoal}"
+                <TextBox Text="{Binding MaxDoseGoal}" Style="{x:Null}"
                          Grid.Row="9" Grid.Column="2"
                          Height="30" VerticalContentAlignment="Center" Margin="5"/>
             </Grid>
         </Border>
 
         <!-- Button Section -->
-        <Button x:Name="btnPlan"
+        <Button x:Name="btnPlan" Style="{x:Null}"
                 Grid.Row="1"
                 Content="Begin Auto-Plan"
                 Command="{Binding CreatePlanCMD}"

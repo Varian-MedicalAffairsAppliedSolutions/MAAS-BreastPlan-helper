@@ -146,7 +146,7 @@ namespace MAAS_BreastPlan_helper
             beamParams.scale = fields[fieldSelected].TreatmentUnit.MachineScaleDisplayName;
         }
 
-        public EthosBeamDialogViewModel(ScriptContext ctx)
+        public EthosBeamDialogViewModel(ScriptContext ctx, EsapiWorker esapiWorker)
         {
             // ctor
             context = ctx;

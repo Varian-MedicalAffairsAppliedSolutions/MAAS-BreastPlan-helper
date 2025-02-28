@@ -1,18 +1,19 @@
 ﻿<metro:MetroWindow x:Class="MAAS_BreastPlan_helper.MainWindow"
-       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-       xmlns:metro="http://metro.mahapps.com/winfx/xaml/controls"
-       xmlns:local="clr-namespace:MAAS_BreastPlan_helper"
-       xmlns:models="clr-namespace:MAAS_BreastPlan_helper.Models"
-       mc:Ignorable="d"
-       Title="MAAS-BreastPlan-helper" FontWeight="DemiBold"
-       Height="600"
-       Width="800"
-       GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
-       WindowStartupLocation="CenterScreen"
-       ResizeMode="CanResizeWithGrip">
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:metro="http://metro.mahapps.com/winfx/xaml/controls"
+                   xmlns:local="clr-namespace:MAAS_BreastPlan_helper"
+                   xmlns:models="clr-namespace:MAAS_BreastPlan_helper.Models"
+                   mc:Ignorable="d"
+                   Title="MAAS-BreastPlan-helper"
+                   FontWeight="DemiBold"
+                   Height="750"
+                   Width="1000"
+                   GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
+                   WindowStartupLocation="CenterScreen"
+                   ResizeMode="CanResizeWithGrip">
 
     <metro:MetroWindow.Resources>
         <ResourceDictionary>
@@ -24,16 +25,17 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <metro:MetroAnimatedTabControl Grid.Row="0" Margin="5">
-            <metro:MetroTabItem x:Name="Auto3DSWTab" Style="{x:Null}">
+        <!-- Main Content (Tabs) -->
+        <metro:MetroAnimatedTabControl Grid.Row="1" Margin="5">
+            <metro:MetroTabItem x:Name="Auto3DSWTab">
                 <metro:MetroTabItem.HeaderTemplate>
                     <DataTemplate>
-                        <TextBlock Text="Auto 3D Sliding Window" FontWeight="DemiBold"></TextBlock>
+                        <TextBlock Text="Auto 3D Sliding Window" FontWeight="DemiBold"/>
                     </DataTemplate>
                 </metro:MetroTabItem.HeaderTemplate>
                 <GroupBox Header="3D Sliding Window Configuration" Margin="5">
@@ -41,10 +43,10 @@
                 </GroupBox>
             </metro:MetroTabItem>
 
-            <metro:MetroTabItem x:Name="TangAutoPlanTab" Style="{x:Null}">
+            <metro:MetroTabItem x:Name="TangAutoPlanTab">
                 <metro:MetroTabItem.HeaderTemplate>
                     <DataTemplate>
-                        <TextBlock Text="Tangential Auto Plan" FontWeight="DemiBold"></TextBlock>
+                        <TextBlock Text="Tangential Auto Plan" FontWeight="DemiBold"/>
                     </DataTemplate>
                 </metro:MetroTabItem.HeaderTemplate>
                 <GroupBox Header="Tangential Plan Configuration" Margin="5">
@@ -52,10 +54,10 @@
                 </GroupBox>
             </metro:MetroTabItem>
 
-            <metro:MetroTabItem x:Name="EthosAutoBeamTab" Style="{x:Null}">
+            <metro:MetroTabItem x:Name="EthosAutoBeamTab">
                 <metro:MetroTabItem.HeaderTemplate>
                     <DataTemplate>
-                        <TextBlock Text="Multi Field Beam Placement" FontWeight="DemiBold"></TextBlock>
+                        <TextBlock Text="Multi Field Beam Placement" FontWeight="DemiBold"/>
                     </DataTemplate>
                 </metro:MetroTabItem.HeaderTemplate>
                 <GroupBox Header="Beam Placement Configuration" Margin="5">
@@ -63,10 +65,10 @@
                 </GroupBox>
             </metro:MetroTabItem>
 
-            <metro:MetroTabItem x:Name="FluenceExtensionTab" Style="{x:Null}">
+            <metro:MetroTabItem x:Name="FluenceExtensionTab">
                 <metro:MetroTabItem.HeaderTemplate>
                     <DataTemplate>
-                        <TextBlock Text="Fluence Extension" FontWeight="DemiBold"></TextBlock>
+                        <TextBlock Text="Fluence Extension" FontWeight="DemiBold"/>
                     </DataTemplate>
                 </metro:MetroTabItem.HeaderTemplate>
                 <GroupBox Header="Fluence Extension Configuration" Margin="5">
@@ -75,37 +77,12 @@
             </metro:MetroTabItem>
         </metro:MetroAnimatedTabControl>
 
-        <!-- Global Progress Bar -->
-        <Grid Grid.Row="1" Margin="5,0,5,5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <metro:MetroProgressBar 
-    x:Name="GlobalProgressBar"
-    IsIndeterminate="False"
-    Value="{Binding Source={x:Static models:ProgressService.Instance}, Path=ProgressValue}"
-    Maximum="100"
-    Height="3"
-    Margin="0,2"
-    Visibility="{Binding Source={x:Static models:ProgressService.Instance}, Path=ProgressBarVisibility}" />
-
-            <TextBlock 
-    Grid.Row="1"
-    Text="{Binding Source={x:Static models:ProgressService.Instance}, Path=ProgressMessage}"
-    HorizontalAlignment="Center"
-    Margin="0,2"
-    Foreground="{DynamicResource MahApps.Brushes.Accent}"
-    Visibility="{Binding Source={x:Static models:ProgressService.Instance}, Path=ProgressBarVisibility}" />
-        </Grid>
-
+        <!-- Footer / Legal Notice -->
         <Border Grid.Row="2"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
                 BorderThickness="0,2,0,0"
                 Background="{DynamicResource MahApps.Brushes.Accent}">
-            <StackPanel Orientation="Horizontal"
-                        Margin="5">
+            <StackPanel Orientation="Horizontal" Margin="5">
                 <Label Margin="0" Foreground="White">
                     <Hyperlink Command="{Binding HyperlinkCmd}" Foreground="White">
                         <Run Text="Bound by the terms of the Varian LUSLA"/>

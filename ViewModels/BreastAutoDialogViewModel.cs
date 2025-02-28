@@ -208,7 +208,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             public int High;
         }
 
-        public BreastAutoDialogViewModel(ScriptContext context, SettingsClass settings)
+        public BreastAutoDialogViewModel(ScriptContext context, SettingsClass settings, EsapiWorker esapiWorker)
         {
             StatusBoxItems = new ObservableCollection<string>();
             PTVItems = new ObservableCollection<Structure>();

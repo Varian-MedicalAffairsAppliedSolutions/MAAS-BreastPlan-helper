@@ -167,9 +167,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomControls\ScrollingListBox.cs" />
-    <Compile Include="Models\ProgressService.cs" />
     <Compile Include="Models\TextBlockOutputter.cs" />
     <Compile Include="Models\Utils.cs" />
+    <Compile Include="Services\EsapiWorker.cs" />
     <Compile Include="ViewModels\Auto3dSlidingWindowViewModel.cs" />
     <Compile Include="ViewModels\BreastAutoDialogViewModel.cs" />
     <Compile Include="ViewModels\FluenceExtensionViewModel.cs" />

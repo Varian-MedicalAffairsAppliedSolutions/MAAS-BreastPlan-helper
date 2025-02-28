@@ -115,10 +115,10 @@ namespace VMS.TPS
             return;
         }
 
-
+        var esapiWorker = new EsapiWorker(context);
         var mainWindow = new MainWindow(context, settings, json_path)
         {
-            DataContext  = new MainViewModel(settings, json_path)
+            DataContext  = new MainViewModel(settings, json_path, esapiWorker)
         };
         
         mainWindow.ShowDialog();

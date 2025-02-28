@@ -330,7 +330,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //if (Settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
             Log.Debug("All checks passed, copying to new plan");
         }
-        public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path) 
+        public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path, EsapiWorker esapiWorker) 
         {
             Context = context;
             Settings = settings;
