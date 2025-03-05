@@ -27,7 +27,11 @@ namespace MAAS_BreastPlan_helper.Views
 
         private void ScrollingListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            ListBox lb = sender as ListBox;
+            if (lb != null && lb.SelectedItem != null)
+            {
+                lb.ScrollIntoView(lb.SelectedItem);
+            }
         }
     }
 }

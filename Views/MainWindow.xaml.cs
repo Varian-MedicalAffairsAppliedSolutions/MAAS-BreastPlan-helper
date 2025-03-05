@@ -18,10 +18,9 @@ namespace MAAS_BreastPlan_helper
             var esapiWorker = new EsapiWorker(context);
 
             // Initialize tabs with corresponding ViewModels
-            EthosAutoBeamTab.Content = new EthosBeamDialog() { DataContext = new EthosBeamDialogViewModel(context, esapiWorker)};
-            TangAutoPlanTab.Content = new BreastAutoDialog() { DataContext = new BreastAutoDialogViewModel(context, settings, esapiWorker)};
-            Auto3DSWTab.Content = new Auto3dSlidingWindow() { DataContext = new Auto3dSlidingWindowViewModel(context, settings, json_path, esapiWorker)};
-            FluenceExtensionTab.Content = new FluenceExtensionView() { DataContext = new FluenceExtensionViewModel(context, settings, esapiWorker)};
+            EthosAutoBeamTab.Content = new EthosBeamDialog() { DataContext = new EthosBeamDialogViewModel(context, esapiWorker) };
+            Auto3DSWTab.Content = new Auto3dSlidingWindow() { DataContext = new Auto3dSlidingWindowViewModel(context, settings, json_path, esapiWorker) };
+            FluenceExtensionTab.Content = new FluenceExtensionView() { DataContext = new FluenceExtensionViewModel(context, settings, esapiWorker) };
         }
     }
 }

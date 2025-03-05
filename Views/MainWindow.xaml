@@ -42,18 +42,7 @@
                     <!-- Content for Auto 3D Sliding Window -->
                 </GroupBox>
             </metro:MetroTabItem>
-
-            <metro:MetroTabItem x:Name="TangAutoPlanTab">
-                <metro:MetroTabItem.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="Tangential Auto Plan" FontWeight="DemiBold"/>
-                    </DataTemplate>
-                </metro:MetroTabItem.HeaderTemplate>
-                <GroupBox Header="Tangential Plan Configuration" Margin="5">
-                    <!-- Content for Tangential Auto Plan -->
-                </GroupBox>
-            </metro:MetroTabItem>
-
+            
             <metro:MetroTabItem x:Name="EthosAutoBeamTab">
                 <metro:MetroTabItem.HeaderTemplate>
                     <DataTemplate>
