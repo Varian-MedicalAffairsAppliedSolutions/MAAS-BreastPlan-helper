@@ -68,8 +68,9 @@ jobs:
         -Password ${{ secrets.GITHUB_TOKEN }} `
         -StorePasswordInClearText
 
-    - name: Download nuget package
-      run: nuget install ESAPI -Version 16.1.0 -OutputDirectory packages
+    - name: Restore NuGet Packages
+      run: nuget restore .\MAAS-BreastPlan-helper.csproj
+      shell: pwsh
 
     - name: Update hint paths in the csproj file
       run: |
