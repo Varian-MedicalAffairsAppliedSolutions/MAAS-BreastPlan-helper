@@ -54,8 +54,11 @@ jobs:
       with:
         nuget-version: latest
     
-    - name: Download nuget packages
-      run: nuget install .\packages.config -OutputDirectory packages
+    - name: Install Compatible NuGet Packages
+      run: |
+        nuget install Serilog -Version 2.9.0 -OutputDirectory packages
+        nuget install Serilog.Sinks.File -Version 4.1.0 -OutputDirectory packages
+      shell: pwsh
    
     - name: Add VIC GitHub NuGet repository
       run: nuget source add
