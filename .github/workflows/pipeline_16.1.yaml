@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: windows-2019
     env:
-      GITHUB_WORKSPACE_PACKAGES_PATH: packages\ESAPI.16.1.0\lib\net461\
+      GITHUB_WORKSPACE_PACKAGES_PATH: packages/ESAPI.16.1.0/lib/net461/
       PROJECT_NAME: MAAS-BreastPlan-helper
       MAJOR_VERSION: 2
       MINOR_VERSION: 5
@@ -20,83 +20,74 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1
 
-    - name: Navigate to Workspace
-      run: cd $GITHUB_WORKSPACE
-      
-    - name: Update Target Framework Version to 4.6.1
-      uses: Nambers/ReplaceStringInFile@v1.1
-      with:
-        path: .\${{env.PROJECT_NAME}}.csproj
-        oldString: "TargetFrameworkVersion>v[\\d\\.]+<"
-        newString: 'TargetFrameworkVersion>v4.6.1<'
+      - name: Navigate to Workspace
+        run: cd $GITHUB_WORKSPACE
 
-    - name: Update AssemblyInfo.cs
-      id: update_assembly_info
-      run: |
-        .\.github\workflows\Update-AssemblyInfo.ps1 `
-          -AssemblyInfoFilePath .\Properties\AssemblyInfo.cs `
-          -ExpirationDate "${{ github.event.inputs.dateInput }}" `
-          -MajorVersion ${{ env.MAJOR_VERSION }} `
-          -MinorVersion ${{ env.MINOR_VERSION }} `
-          -PatchVersion ${{ env.PATCH_VERSION }} `
-          -BuildNumber ${{ env.BUILD_NUMBER }}
-          
-    - name: Setup NuGet.exe for use with actions
-      uses: NuGet/setup-nuget@v1
-      with:
-        nuget-version: latest
-    
-    - name: Install Compatible NuGet Packages
-      run: |
-        nuget install Serilog -Version 2.9.0 -OutputDirectory packages
-        nuget install Serilog.Sinks.File -Version 4.1.0 -OutputDirectory packages
-      shell: pwsh
-   
-    - name: Add VIC GitHub NuGet repository
-      run: nuget source add
-        -Name github `
-        -Source "https://nuget.pkg.github.com/Varian-MedicalAffairsAppliedSolutions/index.json" `
-        -UserName craman96 `
-        -Password ${{ secrets.GITHUB_TOKEN }} `
-        -StorePasswordInClearText
+      - name: Update Target Framework Version to 4.6.1
+        uses: Nambers/ReplaceStringInFile@v1.1
+        with:
+          path: .\${{env.PROJECT_NAME}}.csproj
+          oldString: "TargetFrameworkVersion>v[\\d\\.]+<"
+          newString: 'TargetFrameworkVersion>v4.6.1<'
 
-    - name: Restore NuGet Packages
-      run: nuget restore .\MAAS-BreastPlan-helper.csproj
-      shell: pwsh
+      - name: Update AssemblyInfo.cs
+        id: update_assembly_info
+        run: |
+          .\.github\workflows\Update-AssemblyInfo.ps1 -AssemblyInfoFilePath .\Properties\AssemblyInfo.cs -ExpirationDate "${{ github.event.inputs.dateInput }}" -MajorVersion ${{ env.MAJOR_VERSION }} -MinorVersion ${{ env.MINOR_VERSION }} -PatchVersion ${{ env.PATCH_VERSION }} -BuildNumber ${{ env.BUILD_NUMBER }}
 
-    - name: Update hint paths in the csproj file
-      run: |
-        .\.github\workflows\Update-EsapiHintPaths.ps1 `
-        -CsprojFilePath .\ `
-        -CsprojFileName MAAS-BreastPlan-helper.csproj
-        
-    - name: Build Solution
-      run: msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
-        
-    - name: Zip
-      run: |
-        Compress-Archive `
-          -Path ".\bin\Debug\*" `
-          -DestinationPath "${{ github.workspace }}/${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_FILE_NAME }}-EclipseV161.zip"
-    
-    - name: Create Release
-      uses: softprops/action-gh-release@v0.1.13
-      with:
-        name: ${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_NAME }}-EclipseV16.1
-        tag_name: ${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_NAME }}-EclipseV16.1
-        token: ${{ secrets.GITHUB_TOKEN }}
-        draft: false
-        prerelease: false
-        body: |
-          This is an official release of the **`${{ env.PROJECT_NAME }}`** project.
-          Supported Eclipse version: `v16.1`.
-          The generated dll is valid until `${{ github.event.inputs.dateInput }}`.
-        files: ${{ github.workspace }}/${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_FILE_NAME }}-EclipseV161.zip
+      - name: Setup NuGet.exe for use with actions
+        uses: NuGet/setup-nuget@v1
+        with:
+          nuget-version: latest
+
+      - name: Add VIC GitHub NuGet repository
+        run: nuget source add -Name github -Source "https://nuget.pkg.github.com/Varian-MedicalAffairsAppliedSolutions/index.json" -UserName craman96 -Password ${{ secrets.GITHUB_TOKEN }} -StorePasswordInClearText
+
+      # Add this step to install ESAPI NuGet package
+      - name: Install ESAPI NuGet Package
+        run: nuget install ESAPI -Version 16.1.0 -OutputDirectory packages
+        shell: pwsh
+
+      - name: Install Compatible NuGet Packages
+        run: |
+          nuget install Serilog -Version 2.9.0 -OutputDirectory packages
+          nuget install Serilog.Sinks.File -Version 4.1.0 -OutputDirectory packages
+        shell: pwsh
+
+      - name: Restore NuGet Packages
+        run: nuget restore .\${{env.PROJECT_NAME}}.csproj
+        shell: pwsh
+
+      - name: Update hint paths in the csproj file
+        run: |
+          .\.github\workflows\Update-EsapiHintPaths.ps1 -CsprojFilePath .\ -CsprojFileName ${{env.PROJECT_NAME}}.csproj
+
+      - name: Build Solution
+        run: msbuild.exe .\${{env.PROJECT_NAME}}.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
+
+      - name: Zip
+        run: |
+          Compress-Archive -Path ".\bin\Debug\*" -DestinationPath "${{ github.workspace }}/${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_FILE_NAME }}-EclipseV161.zip"
+        shell: pwsh
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v0.1.13
+        with:
+          name: ${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_NAME }}-EclipseV16.1
+          tag_name: ${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_NAME }}-EclipseV16.1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
+          body: |
+            This is an official release of the **`${{ env.PROJECT_NAME }}`** project.
+            Supported Eclipse version: `v16.1`.
+            The generated dll is valid until `${{ github.event.inputs.dateInput }}`.
+          files: ${{ github.workspace }}/${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_FILE_NAME }}-EclipseV161.zip
