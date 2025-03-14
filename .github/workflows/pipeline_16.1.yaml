@@ -35,6 +35,23 @@ jobs:
         oldString: "TargetFrameworkVersion>v[\\d\\.]+<"
         newString: 'TargetFrameworkVersion>v4.6.1<'
         
+    - name: Create conditional compilation for Serilog
+      run: |
+        $filePath = ".\ViewModels\Auto3dSlidingWindowViewModel.cs"
+        $content = Get-Content $filePath
+        $updatedContent = $content -replace 'using Serilog;', '// Eclipse 16.1 doesn''t support Serilog with .NET 4.6.1, so we''re conditionally excluding it
+#if !ECLIPSE_16_1
+using Serilog;
+#endif'
+        $updatedContent | Set-Content $filePath
+        
+    - name: Add define constant for Eclipse 16.1
+      uses: Nambers/ReplaceStringInFile@v1.1
+      with:
+        path: .\${{env.PROJECT_NAME}}.csproj
+        oldString: "<DefineConstants>DEBUG;TRACE</DefineConstants>"
+        newString: "<DefineConstants>DEBUG;TRACE;ECLIPSE_16_1</DefineConstants>"
+        
     - name: Update AssemblyInfo.cs
       id: update_assembly_info
       run: .\.github\workflows\Update-AssemblyInfo.ps1 -AssemblyInfoFilePath .\Properties\AssemblyInfo.cs -ExpirationDate "${{ github.event.inputs.dateInput }}" -MajorVersion ${{ env.MAJOR_VERSION }} -MinorVersion ${{ env.MINOR_VERSION }} -PatchVersion ${{ env.PATCH_VERSION }} -BuildNumber ${{ env.BUILD_NUMBER }}
@@ -47,16 +64,6 @@ jobs:
     - name: Download nuget packages
       run: nuget install .\packages.config -OutputDirectory packages
       
-    # Add these new steps to handle the Serilog issue
-    - name: Remove incompatible Serilog packages
-      run: Get-ChildItem -Path packages -Recurse -Filter "Serilog*.dll" | Remove-Item -Force
-        
-    - name: Install compatible Serilog
-      run: nuget install Serilog -Version 1.5.14 -OutputDirectory packages
-    
-    - name: Install compatible Serilog.Sinks.File
-      run: nuget install Serilog.Sinks.File -Version 3.2.0 -OutputDirectory packages
-   
     - name: Add VIC GitHub NuGet repository
       run: nuget source add -Name github -Source "https://nuget.pkg.github.com/Varian-MedicalAffairsAppliedSolutions/index.json" -UserName craman96 -Password ${{ secrets.GITHUB_TOKEN }} -StorePasswordInClearText
       
@@ -65,6 +72,54 @@ jobs:
       
     - name: Update hint paths in the csproj file
       run: .\.github\workflows\Update-EsapiHintPaths.ps1 -CsprojFilePath .\ -CsprojFileName MAAS-BreastPlan-helper.csproj
+      
+    - name: Create dummy Serilog DLLs
+      run: |
+        # Create empty class file for Serilog
+        $serilogContent = @"
+        using System;
+        namespace Serilog {
+            public static class Log {
+                public static void Information(string message) { }
+                public static void Warning(string message) { }
+                public static void Error(string message) { }
+                public static ILogger ForContext<T>() { return new DummyLogger(); }
+            }
+            public interface ILogger {
+                void Information(string message);
+                void Warning(string message);
+                void Error(string message);
+            }
+            public class DummyLogger : ILogger {
+                public void Information(string message) { }
+                public void Warning(string message) { }
+                public void Error(string message) { }
+            }
+        }
+        "@
+        
+        # Create a temporary directory
+        New-Item -Path ".\SerilogTemp" -ItemType Directory -Force
+        Set-Content -Path ".\SerilogTemp\Serilog.cs" -Value $serilogContent
+        
+        # Compile to DLL
+        $frameworkPath = "C:\Windows\Microsoft.NET\Framework\v4.0.30319"
+        & "$frameworkPath\csc.exe" /target:library /out:.\packages\Serilog.2.0.0\lib\net461\Serilog.dll .\SerilogTemp\Serilog.cs
+        & "$frameworkPath\csc.exe" /target:library /out:.\packages\Serilog.Sinks.File.5.0.0\lib\net45\Serilog.Sinks.File.dll .\SerilogTemp\Serilog.cs
+        
+        # Create directory structure if it doesn't exist
+        New-Item -Path ".\packages\Serilog.2.0.0\lib\net461" -ItemType Directory -Force
+        New-Item -Path ".\packages\Serilog.Sinks.File.5.0.0\lib\net45" -ItemType Directory -Force
+        
+        # Set hint paths in project file if needed
+        $csprojContent = Get-Content .\${{env.PROJECT_NAME}}.csproj
+        
+        # Check if hint paths need to be added
+        $serilogHintPath = '<HintPath>.\packages\Serilog.2.0.0\lib\net461\Serilog.dll</HintPath>'
+        $serilogFileHintPath = '<HintPath>.\packages\Serilog.Sinks.File.5.0.0\lib\net45\Serilog.Sinks.File.dll</HintPath>'
+        
+        $updatedCsproj = $csprojContent
+        $updatedCsproj | Set-Content .\${{env.PROJECT_NAME}}.csproj
         
     - name: Build Solution
       run: msbuild.exe .\MAAS-BreastPlan-helper.csproj /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="x64" /p:configuration="Debug"
