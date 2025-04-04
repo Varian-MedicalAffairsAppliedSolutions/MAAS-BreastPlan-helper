@@ -11,6 +11,8 @@ using System.Globalization;
 using System.IO;
 using Newtonsoft.Json;
 using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
+using System.Windows.Media.Imaging;
+using MAAS.Common.EulaVerification;
 
 // TODO: Uncomment the following line if the script requires write access.
 //15.x or later:
@@ -20,108 +22,148 @@ using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 namespace VMS.TPS
 {
     public class Script
-  {
-    private string newBuildURL = "https://github.com/Varian-Innovation-Center/MAAS-BreastPlan-helper";
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public void Execute(ScriptContext context)
     {
+        // Define the project information for EULA verification
+        private const string PROJECT_NAME = "BreastPlan-helper";
+        private const string PROJECT_VERSION = "1.0.0";
+        private const string LICENSE_URL = "https://varian-medicalaffairsappliedsolutions.github.io/MAAS-BreastPlan-helper/";
+        private const string GITHUB_URL = "https://github.com/Varian-MedicalAffairsAppliedSolutions/MAAS-BreastPlan-helper";
 
-        if (context.Patient == null || context.PlanSetup == null)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void Execute(ScriptContext context)
         {
-            MessageBox.Show("No active plan selected - exiting.");
-            return;
-        }
-
-
-        PlanSetup plan = context.PlanSetup != null ? context.PlanSetup : context.PlansInScope.ElementAt(0);
-        if (plan.PlanType != PlanType.ExternalBeam)
-        {
-            MessageBox.Show("Please open an external beam plan.");
-            return;
-        }
-
-        ExternalPlanSetup ext_plan = (ExternalPlanSetup)plan;
-
-        int tx_beams = 0;
-        foreach (var bm in ext_plan.Beams)
-        {
-            if (bm.IsSetupField.Equals(true))
+            try
             {
-                continue;
+                // Define constants
+                const string PROJECT_NAME = "BreastPlan-helper";
+                const string PROJECT_VERSION = "1.0.0";
+                const string LICENSE_URL = "https://varian-medicalaffairsappliedsolutions.github.io/MAAS-BreastPlan-helper/";
+                const string GITHUB_URL = "https://github.com/Varian-MedicalAffairsAppliedSolutions/MAAS-BreastPlan-helper";
+
+                // License verification
+                var eulaVerifier = new EulaVerifier(PROJECT_NAME, PROJECT_VERSION, LICENSE_URL);
+                var eulaConfig = EulaConfig.Load(PROJECT_NAME);
+                if (eulaConfig.Settings == null)
+                    eulaConfig.Settings = new ApplicationSettings();
+
+                if (!eulaVerifier.IsEulaAccepted())
+                {
+                    MessageBox.Show(
+                        $"This version of {PROJECT_NAME} (v{PROJECT_VERSION}) requires license acceptance before first use.\n\n" +
+                        "You will be prompted to provide an access code. Please follow the instructions to obtain your code.",
+                        "License Acceptance Required",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    BitmapImage qrCode = null;
+                    try
+                    {
+                        string assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+                        qrCode = new BitmapImage(new Uri($"pack://application:,,,/{assemblyName};component/Resources/qrcode.bmp"));
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error loading QR code: {ex.Message}");
+                    }
+
+                    if (!eulaVerifier.ShowEulaDialog(qrCode))
+                    {
+                        MessageBox.Show("License acceptance is required to use this application.\n\nThe application will now close.",
+                            "License Not Accepted", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                }
+
+                // Load config.json
+                var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var jsonPath = Path.Combine(path, "config.json");
+                MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass settings = null;
+
+                try
+                {
+                    if (File.Exists(jsonPath))
+                    {
+                        string jsonContent = File.ReadAllText(jsonPath);
+                        settings = JsonConvert.DeserializeObject<MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass>(jsonContent);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Config file not found. Default settings will be used.");
+                        settings = new MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error reading config.json: {ex.Message}");
+                    settings = new MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass();
+                }
+
+                // Merge license-specific values into settings
+                if (eulaConfig?.Settings != null)
+                {
+                    settings.Validated = eulaConfig.Settings.Validated;
+                    settings.EULAAgreed = eulaConfig.Settings.EULAAgreed;
+                }
+
+                // Check for required context
+                if (context.Patient == null || context.PlanSetup == null)
+                {
+                    MessageBox.Show("No active plan selected - exiting.");
+                    return;
+                }
+
+                // Expiration check
+                var noexp_path = Path.Combine(path, "NOEXPIRE");
+                bool foundNoExpire = File.Exists(noexp_path);
+
+                var asmCa = Assembly.GetExecutingAssembly().CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(AssemblyExpirationDate));
+                DateTime exp;
+                var provider = new CultureInfo("en-US");
+                DateTime.TryParse(asmCa?.ConstructorArguments.FirstOrDefault().Value as string, provider, DateTimeStyles.None, out exp);
+
+                if (exp < DateTime.Now && !foundNoExpire)
+                {
+                    MessageBox.Show($"Application has expired. Newer builds with future expiration dates can be found here: {GITHUB_URL}");
+                    return;
+                }
+
+                // Disclaimer message
+                string msg = $"The current ModulationComplexity application is provided AS IS as a non-clinical, research only tool in evaluation only. The current " +
+                             $"application will only be available until {exp.Date} after which the application will be unavailable. " +
+                             "By Clicking 'Yes' you agree that this application will be evaluated and not utilized in providing planning decision support\n\n" +
+                             $"Newer builds with future expiration dates can be found here: {GITHUB_URL}\n\n" +
+                             "See the FAQ for more information on how to remove this pop-up and expiration";
+
+                string msg2 = $"Application will only be available until {exp.Date} after which the application will be unavailable. " +
+                              "By Clicking 'Yes' you agree that this application will be evaluated and not utilized in providing planning decision support\n\n" +
+                              $"Newer builds with future expiration dates can be found here: {GITHUB_URL} \n\n" +
+                              "See the FAQ for more information on how to remove this pop-up and expiration";
+
+                if (!foundNoExpire)
+                {
+                    if (!settings.Validated)
+                    {
+                        var res = MessageBox.Show(msg, "Agreement", MessageBoxButton.YesNo);
+                        if (res == MessageBoxResult.No) return;
+                    }
+                    else
+                    {
+                        var res = MessageBox.Show(msg2, "Agreement", MessageBoxButton.YesNo);
+                        if (res == MessageBoxResult.No) return;
+                    }
+                }
+
+                // Launch UI
+                var esapiWorker = new EsapiWorker(context);
+                var viewModel = new MainViewModel(settings, jsonPath, esapiWorker);
+                var mainWindow = new MainWindow(context, settings, jsonPath);
+                mainWindow.DataContext = viewModel;
+                mainWindow.ShowDialog();
             }
-            else
+            catch (Exception ex)
             {
-                tx_beams += 1;
+                MessageBox.Show($"An error occurred: {ex.Message}\n\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        if (tx_beams < 1)
-        {
-            MessageBox.Show("There must be at least 1 treatment field in the plan.\nSetup fields are ignored.");
-            return;
-        }
-
-        // Check NOEXPIRE FILE
-        var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        var noexp_path = Path.Combine(path, "NOEXPIRE");
-        bool foundNoExpire = System.IO.File.Exists(noexp_path);
-
-        // search for json config in current dir, NOTE: see instructions on how to create this at the top of the file.
-        var json_path = Path.Combine(path, "config.json");
-        if (!File.Exists(json_path)) { throw new Exception($"Could not locate json path {json_path}"); }
-        var settings = JsonConvert.DeserializeObject<SettingsClass>(File.ReadAllText(json_path));
-
-        // Get expiration date from Assembly
-        var asmCa = Assembly.GetExecutingAssembly().CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(AssemblyExpirationDate));
-        DateTime exp;
-        var provider = new CultureInfo("en-US");
-        DateTime.TryParse(asmCa.ConstructorArguments.FirstOrDefault().Value as string, provider, DateTimeStyles.None, out exp);
-
-        // Check expiration date
-        if (exp < DateTime.Now && !foundNoExpire)
-        {
-            MessageBox.Show("Application has expired. Newer builds with future expiration dates can be found here: https://github.com/Varian-Innovation-Center/MAAS-BreastPlan-helper");
-            return;
-        }
-
-        // Check that they have agreed to EULA
-        if (!settings.EULAAgreed)
-        {
-            var msg0 = "You are bound by the terms of the Varian Limited Use Software License Agreement (LULSA). \"To stop viewing this message set EULA to \"true\" in DoseRateEditor.exe.config\"\nShow license agreement?";
-            string title = "Varian LULSA";
-            var buttons = MessageBoxButton.YesNo;
-            var result = MessageBox.Show(msg0, title, buttons);
-            if (result == MessageBoxResult.Yes)
-            {
-                Process.Start("notepad.exe", Path.Combine(path, "license.txt"));
-            }
-
-            // Save that they have seen EULA
-            settings.EULAAgreed = true;
-            File.WriteAllText(Path.Combine(path, "config.json"), JsonConvert.SerializeObject(settings));
-        }
-
-        // Display opening msg
-        string msg = $"The current MAAS-BreastPlan-helper application is provided AS IS as a non-clinical, research only tool in evaluation only. The current " +
-        $"application will only be available until {exp.Date} after which the application will be unavailable. " +
-        $"By Clicking 'Yes' you agree that this application will be evaluated and not utilized in providing planning decision support\n\n" +
-        $"Newer builds with future expiration dates can be found here: {newBuildURL}\n\n" +
-        "See the FAQ for more information on how to remove this pop-up and expiration";
-        var res = MessageBox.Show(msg, "Agreement  ", MessageBoxButton.OKCancel);
-
-        // If they don't agree close window
-        if (res == MessageBoxResult.No)
-        {
-            return;
-        }
-
-
-        var mainWindow = new MainWindow(context, settings, json_path)
-        {
-            DataContext  = new MainViewModel(settings, json_path)
-        };
-        
-        mainWindow.ShowDialog();
     }
-  }
 }

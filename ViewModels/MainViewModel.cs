@@ -18,7 +18,7 @@ namespace MAAS_BreastPlan_helper
 
 	public class MainViewModel: BindableBase
     {
-
+        private readonly EsapiWorker _esapiWorker;
         public DelegateCommand HyperlinkCmd { get; private set; }
 
         private string postText;
@@ -42,8 +42,9 @@ namespace MAAS_BreastPlan_helper
         }
 
 
-        public MainViewModel(SettingsClass settings, string json_path)
+        public MainViewModel(SettingsClass settings, string json_path, EsapiWorker esapiWorker)
         {
+            _esapiWorker = esapiWorker;
             //MessageBox.Show($"Is Debug == {isDebug}");
             //var hlink = new Hyperlink() { NavigateUri = new Uri("http://medicalaffairs.varian.com/download/VarianLUSLA.pdf") };
             //Footer += hlink;

@@ -1,0 +1,90 @@
+﻿<UserControl x:Class="MAAS_BreastPlan_helper.Views.FluenceExtensionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="400">   
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{x:Null}">
+        <StackPanel Margin="10" Background="White" Style="{x:Null}">
+            <!-- PTV Structure Selection -->
+            <GroupBox Header="PTV Structure" Margin="5" Style="{x:Null}">
+                <StackPanel Margin="5">
+                    <TextBlock Text="Select the PTV structure:" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}" />
+                    <ComboBox ItemsSource="{Binding Structures}" Style="{x:Null}"
+                          SelectedItem="{Binding SelectedPTVStructure}" 
+                          DisplayMemberPath="Id"
+                          Margin="0,0,0,10" />
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Fluence Parameters -->
+            <GroupBox Header="Fluence Parameters" Margin="5" Style="{x:Null}"> 
+                <StackPanel Margin="5">
+                    <!-- Extent -->
+                    <TextBlock Text="Select the extent of the fluence (cm):" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}" />
+                    <TextBox Text="{Binding FluenceExtent, UpdateSourceTrigger=PropertyChanged}" Style="{x:Null}"
+                         Margin="0,0,0,10" />
+
+                    <!-- Depth -->
+                    <TextBlock Text="Enter the depth of the fluence (cm):" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}"/>
+                    <ComboBox ItemsSource="{Binding FluenceDepthOptions}" Style="{x:Null}"
+                          SelectedItem="{Binding SelectedFluenceDepth}" 
+                          Margin="0,0,0,10" />
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Beam Selection -->
+            <GroupBox Header="Beam Selection" Margin="5" Style="{x:Null}">
+                <StackPanel Margin="5">
+                    <TextBlock Text="Select the beams:" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}"/>
+                    <ListBox ItemsSource="{Binding BeamSelectionItems}" Style="{x:Null}"
+                 SelectionMode="Multiple"
+                 MinHeight="150"
+                 MaxHeight="200"
+                 Height="Auto"
+                 Width="Auto"
+                 HorizontalAlignment="Stretch"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 BorderThickness="1"
+                 BorderBrush="#AAAAAA">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding BeamId}" Style="{x:Null}"
+                              IsChecked="{Binding IsSelected}"
+                              Margin="5,2"
+                              FontSize="14" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Status and Confirm -->
+            <StackPanel Margin="5">
+                <TextBlock Text="{Binding StatusMessage}" 
+                       Foreground="Red" 
+                       TextWrapping="Wrap"
+                       Margin="0,5" />
+
+                <Button Content="Confirm" 
+                    Command="{Binding ConfirmSelectionCommand}"
+                    Height="40" 
+                    Margin="0,10,0,5"
+                    Background="#007ACC" 
+                    Foreground="White">
+                    <Button.Style>
+                        <Style TargetType="Button"> 
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
