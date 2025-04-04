@@ -36,18 +36,25 @@
             </GroupBox>
 
             <!-- Beam Selection -->
-            <GroupBox Header="Beam Selection" Margin="5">
+            <GroupBox Header="Beam Selection" Margin="5" Style="{x:Null}">
                 <StackPanel Margin="5">
                     <TextBlock Text="Select the beams:" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}"/>
                     <ListBox ItemsSource="{Binding BeamSelectionItems}" Style="{x:Null}"
-                         SelectionMode="Multiple"
-                         MaxHeight="200"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"> 
+                 SelectionMode="Multiple"
+                 MinHeight="150"
+                 MaxHeight="200"
+                 Height="Auto"
+                 Width="Auto"
+                 HorizontalAlignment="Stretch"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 BorderThickness="1"
+                 BorderBrush="#AAAAAA">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <CheckBox Content="{Binding BeamId}" Style="{x:Null}"
-                                      IsChecked="{Binding IsSelected}"
-                                      Margin="2" />
+                              IsChecked="{Binding IsSelected}"
+                              Margin="5,2"
+                              FontSize="14" />
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

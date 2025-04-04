@@ -17,6 +17,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Serilog;
 using System.Windows.Threading;
+using System.Windows.Data;
 
 
 /*
@@ -370,6 +371,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             if (lHeartStructures.Count == 0) { throw new Exception("Heart structures are empty"); }
 
             HeartStructures = new ObservableCollection<Structure>();
+            BindingOperations.EnableCollectionSynchronization(HeartStructures, this);
             foreach (var structure in lHeartStructures) { HeartStructures.Add(structure); }
             Heart = HeartStructures.FirstOrDefault();
 
