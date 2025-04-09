@@ -159,11 +159,11 @@
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.API">
-      <HintPath>.\VMS.TPS.Common.Model.API.dll</HintPath>
+      <HintPath>..\ESAPI dll\VMS.TPS.Common.Model.API.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.Types">
-      <HintPath>.\VMS.TPS.Common.Model.Types.dll</HintPath>
+      <HintPath>..\ESAPI dll\VMS.TPS.Common.Model.Types.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="WindowsBase" />
