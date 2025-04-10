@@ -16,11 +16,11 @@ using System.Windows.Shapes;
 namespace MAAS_BreastPlan_helper.Views
 {
     /// <summary>
-    /// Interaction logic for Auto3dSlidingWindow.xaml
+    /// Interaction logic for BreastFiFView.xaml
     /// </summary>
-    public partial class FluenceExtensionView : UserControl
+    public partial class BreastFiFView : UserControl
     {
-        public FluenceExtensionView()
+        public BreastFiFView()
         {
             InitializeComponent();
         }

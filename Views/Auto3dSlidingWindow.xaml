@@ -36,6 +36,7 @@
 
                 <!-- Status Box -->
                 <ListBox ItemsSource="{Binding StatusBoxItems}" Style="{x:Null}"
+                        SelectedItem="{Binding SelectedStatusItem}"
                         Grid.Row="0" Grid.RowSpan="5"
                         Grid.Column="0"
                         Margin="10"

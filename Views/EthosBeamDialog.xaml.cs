@@ -19,6 +19,7 @@ using VMS.TPS.Common.Model.Types;
 using NLog;
 using System.Net.NetworkInformation;
 using System.ComponentModel;
+using MAAS_BreastPlan_helper.ViewModels;
  
 namespace MAAS_BreastPlan_helper.Views
 {
@@ -27,10 +28,7 @@ namespace MAAS_BreastPlan_helper.Views
     /// </summary>
     public partial class EthosBeamDialog : UserControl
     {
-
-        public EthosBeamDialogViewModel vm;
-
-        public TextBoxOutputter outputter;
+        private EthosBeamDialogViewModel ViewModel => DataContext as EthosBeamDialogViewModel;
 
         public EthosBeamDialog()
         {
@@ -43,36 +41,34 @@ namespace MAAS_BreastPlan_helper.Views
             Console.WriteLine(who);
         }
 
-
         private void RecalculateBeamAngles(object sender, RoutedEventArgs e)
         {
-            vm.RecalculateBeams();
+            ViewModel.RecalculateBeams();
             dgSimple.Items.Refresh();
         }
 
         private void RecalculateCollimatorAngles(object sender, RoutedEventArgs e)
         {
-            vm.RecalculateColls();
+            ViewModel.RecalculateColls();
             dgSimple.Items.Refresh();
         }
         private void RecalculateMLC(object sender, RoutedEventArgs e)
         {
-            vm.RecalculateMLCs();
+            ViewModel.RecalculateMLCs();
             dgSimple.Items.Refresh();
         }
 
         private void DeleteBeams(object sender, RoutedEventArgs e)
         {
-            vm.DeleteBeams();
+            ViewModel.DeleteBeams();
             SeedField.Items.Refresh();
         }
 
         private void CreateBeams(object sender, RoutedEventArgs e)
         {
-            vm.CreateBeams();
+            ViewModel.CreateBeams();
             SeedField.Items.Refresh();
         }
-
     }
 }
 

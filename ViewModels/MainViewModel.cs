@@ -1,62 +1,50 @@
-﻿using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
-using NLog.Layouts;
+﻿using System;
+using System.Windows.Input;
+using VMS.TPS.Common.Model.API;
+using MAAS_BreastPlan_helper.Models;
 using Prism.Commands;
 using Prism.Mvvm;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Configuration;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Documents;
 
-namespace MAAS_BreastPlan_helper
+namespace MAAS_BreastPlan_helper.ViewModels
 {
-	
-
-	public class MainViewModel: BindableBase
+    public class MainViewModel : BindableBase
     {
-        private readonly EsapiWorker _esapiWorker;
-        public DelegateCommand HyperlinkCmd { get; private set; }
+        private readonly ScriptContext _context;
+        private readonly SettingsClass _settings;
+        private string _statusMessage = "Ready";
 
-        private string postText;
-        public string PostText
+        public string StatusMessage
         {
-            get { return postText; }
-            set { SetProperty(ref postText, value); }
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
         }
 
-        private void OnHyperlink()
+        public DelegateCommand ExecuteCommand { get; private set; }
+
+        public MainViewModel(ScriptContext context, SettingsClass settings)
         {
-            var url = "http://medicalaffairs.varian.com/download/VarianLUSLA.pdf";
-            System.Diagnostics.Process.Start(
-                new System.Diagnostics.ProcessStartInfo(url)
-                );
+            _context = context;
+            _settings = settings;
+            ExecuteCommand = new DelegateCommand(Execute, CanExecute);
         }
 
-        private bool CanHyperlink()
+        private bool CanExecute()
         {
-            return true;
+            return _context?.PlanSetup != null;
         }
 
-
-        public MainViewModel(SettingsClass settings, string json_path, EsapiWorker esapiWorker)
+        private void Execute()
         {
-            _esapiWorker = esapiWorker;
-            //MessageBox.Show($"Is Debug == {isDebug}");
-            //var hlink = new Hyperlink() { NavigateUri = new Uri("http://medicalaffairs.varian.com/download/VarianLUSLA.pdf") };
-            //Footer += hlink;
-            PostText = "";
-            if (!settings.Validated)
+            try
             {
-                PostText = " *** Not Validated for clinical use ***";
+                StatusMessage = "Executing main operation...";
+                // Add your implementation
+                StatusMessage = "Operation completed successfully.";
             }
-
-            HyperlinkCmd = new DelegateCommand(OnHyperlink, CanHyperlink);
-
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error: {ex.Message}";
+            }
         }
-
     }
 }
