@@ -13,12 +13,10 @@ using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using System.Windows.Controls;
 using System.IO;
-using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 using MAAS_BreastPlan_helper.Models;
 using MAAS_BreastPlan_helper.Views;
 using static MAAS_BreastPlan_helper.ViewModels.FluenceExtensionViewModel;
-using System.Threading;
-using System.Windows.Threading;
+
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
@@ -26,34 +24,66 @@ namespace MAAS_BreastPlan_helper.ViewModels
     {
         private readonly ScriptContext _context;
         private readonly SettingsClass _settings;
-        private readonly EsapiWorker _esapiWorker;
         private Structure _body;
 
-        public ObservableCollection<Structure> Structures { get; set; }
-        public ObservableCollection<BeamSelectionItem> BeamSelectionItems { get; set; }
-        public ObservableCollection<string> FluenceDepthOptions { get; set; }
+        // Observable Collections
+        private ObservableCollection<Structure> _structures;
+        public ObservableCollection<Structure> Structures
+        {
+            get => _structures;
+            set => SetProperty(ref _structures, value);
+        }
 
+        private ObservableCollection<BeamSelectionItem> _beamSelectionItems;
+        public ObservableCollection<BeamSelectionItem> BeamSelectionItems
+        {
+            get => _beamSelectionItems;
+            set => SetProperty(ref _beamSelectionItems, value);
+        }
+
+        private ObservableCollection<string> _fluenceDepthOptions;
+        public ObservableCollection<string> FluenceDepthOptions
+        {
+            get => _fluenceDepthOptions;
+            set => SetProperty(ref _fluenceDepthOptions, value);
+        }
+
+        // Selected Structure
         private Structure _selectedPTVStructure;
         public Structure SelectedPTVStructure
         {
             get => _selectedPTVStructure;
-            set { SetProperty(ref _selectedPTVStructure, value); CommandManager.InvalidateRequerySuggested(); }
+            set
+            {
+                SetProperty(ref _selectedPTVStructure, value);
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
+        // Fluence Properties
         private string _fluenceExtent;
         public string FluenceExtent
         {
             get => _fluenceExtent;
-            set { SetProperty(ref _fluenceExtent, value); CommandManager.InvalidateRequerySuggested(); }
+            set
+            {
+                SetProperty(ref _fluenceExtent, value);
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private string _selectedFluenceDepth;
         public string SelectedFluenceDepth
         {
             get => _selectedFluenceDepth;
-            set { SetProperty(ref _selectedFluenceDepth, value); CommandManager.InvalidateRequerySuggested(); }
+            set
+            {
+                SetProperty(ref _selectedFluenceDepth, value);
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
+        // Status Message
         private string _statusMessage;
         public string StatusMessage
         {
@@ -61,90 +91,108 @@ namespace MAAS_BreastPlan_helper.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
-        public ICommand ConfirmSelectionCommand { get; }
+        // Command
+        public ICommand ConfirmSelectionCommand { get; private set; }
 
-        public FluenceExtensionViewModel(ScriptContext context, SettingsClass settings, EsapiWorker esapiWorker)
+        // Constructor
+        public FluenceExtensionViewModel(ScriptContext context, SettingsClass settings)
         {
             _context = context;
             _settings = settings;
-            _esapiWorker = esapiWorker;
-
             ConfirmSelectionCommand = new RelayCommand(ExecuteConfirmSelection, CanExecuteConfirmSelection);
-            Initialize();
+            Initialize(context, settings);
         }
 
-        private void Initialize()
+        private void Initialize(ScriptContext context, SettingsClass settings)
         {
-            _body = _context.StructureSet.Structures.FirstOrDefault(x => x.DicomType == "EXTERNAL");
+            // Get the body structure
+            _body = context.StructureSet.Structures.FirstOrDefault(x => x.DicomType == "EXTERNAL");
 
-            Structures = new ObservableCollection<Structure>(_context.StructureSet.Structures.Where(s => s.Id.Contains("PTV")));
+            // Initialize collections
+            Structures = new ObservableCollection<Structure>(
+                context.StructureSet.Structures.Where(s => s.Id.Contains("PTV"))
+            );
 
             BeamSelectionItems = new ObservableCollection<BeamSelectionItem>(
-                _context.ExternalPlanSetup.Beams
-                .Where(b => b.GetOptimalFluence() != null)
-                .Select(b => new BeamSelectionItem { BeamId = b.Id, IsSelected = false, Beam = b })
+                context.ExternalPlanSetup.Beams
+                    .Where(b => b.GetOptimalFluence() != null)
+                    .Select(b => new BeamSelectionItem { BeamId = b.Id, IsSelected = false, Beam = b })
             );
 
             FluenceDepthOptions = new ObservableCollection<string> { "0.5", "0.6", "0.7", "0.8", "0.9", "1.0" };
-            FluenceExtent = "2.0"; // Default
+            FluenceExtent = "2.0"; // Default value
         }
 
-        private bool CanExecuteConfirmSelection(object parameter) =>
-            SelectedPTVStructure != null &&
-            !string.IsNullOrWhiteSpace(FluenceExtent) &&
-            !string.IsNullOrWhiteSpace(SelectedFluenceDepth) &&
-            BeamSelectionItems.Any(item => item.IsSelected);
+        private bool CanExecuteConfirmSelection(object parameter)
+        {
+            bool hasStructure = SelectedPTVStructure != null;
+            bool hasExtent = !string.IsNullOrWhiteSpace(FluenceExtent);
+            bool hasDepth = !string.IsNullOrWhiteSpace(SelectedFluenceDepth);
+            bool hasSelectedBeam = BeamSelectionItems.Any(item => item.IsSelected);
+
+            StatusMessage = $"Structure: {hasStructure}, Extent: {hasExtent}, Depth: {hasDepth}, Beam: {hasSelectedBeam}";
+            return hasStructure && hasExtent && hasDepth && hasSelectedBeam;
+        }
 
         private void ExecuteConfirmSelection(object parameter)
         {
-            ProcessBeams(); 
+            ProcessBeams();
         }
 
-        
         private void ProcessBeams()
         {
-            StatusMessage = "Processing beams...";
-
-            _esapiWorker.Run(sc =>
+            try
             {
-                try
+                if (SelectedPTVStructure == null || !BeamSelectionItems.Any(item => item.IsSelected))
                 {
-                    sc.Patient.BeginModifications();
-
-                    var course = sc.Course;
-                    var originalPlan = sc.ExternalPlanSetup;
-
-                    
-                    var copiedPlan = (ExternalPlanSetup)course.CopyPlanSetup(originalPlan);
-
-                   
-                    int index = course.PlanSetups.Count(p => p.Id.StartsWith("Fluence_Ext")) + 1;
-                    copiedPlan.Id = $"Fluence_Ext_{index}";
-
-                    
-                    var selectedBeams = copiedPlan.Beams
-                        .Where(b => BeamSelectionItems.Any(item => item.IsSelected && item.Beam.Id == b.Id))
-                        .ToList();
-
-                    var processor = new BeamProcessor(
-                        double.Parse(FluenceExtent),
-                        double.Parse(SelectedFluenceDepth),
-                        _body,
-                        SelectedPTVStructure
-                    );
-
-                    processor.ProcessBeams(selectedBeams, copiedPlan);
-
-                    
-                    System.Windows.Application.Current.Dispatcher.Invoke(() => StatusMessage = "Fluence extension completed successfully.");
+                    return;
                 }
-                catch (Exception ex)
+
+                // Begin modifications
+                _context.Patient.BeginModifications();
+
+                // Save initial plan state
+                var originalPlanId = _context.ExternalPlanSetup.Id;
+                var course = _context.Course;
+                var eps = _context.ExternalPlanSetup;
+
+                // Update plan ID for the modified version
+                int index = 1;
+                foreach (var p in course.PlanSetups)
                 {
-                   System.Windows.Application.Current.Dispatcher.Invoke(() => StatusMessage = $"Error: {ex.Message}");
+                    if (p.Id.Contains("Fluence_Ext")) { index++; }
                 }
-            });
+                eps.Id = $"Fluence_Ext_{index}";
+
+                // Save the initial plan
+                var initialPlan = (ExternalPlanSetup)course.CopyPlanSetup(eps);
+                initialPlan.Id = originalPlanId;
+
+                // Get selected beams
+                var selectedBeams = BeamSelectionItems
+                    .Where(item => item.IsSelected)
+                    .Select(item => item.Beam)
+                    .ToList();
+
+                // Create and run beam processor
+                var processor = new BeamProcessor(
+                    double.Parse(FluenceExtent),
+                    double.Parse(SelectedFluenceDepth),
+                    _body,
+                    SelectedPTVStructure
+                );
+
+                processor.ProcessBeams(selectedBeams, eps);
+
+                StatusMessage = "Fluence extension completed successfully";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error processing beams: {ex.Message}";
+            }
         }
 
+        // Nested Classes
         public class BeamSelectionItem : BindableBase
         {
             public string BeamId { get; set; }
@@ -170,12 +218,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
             }
 
             public bool CanExecute(object parameter) => _canExecute == null || _canExecute(parameter);
+
             public void Execute(object parameter) => _execute(parameter);
 
             public event EventHandler CanExecuteChanged
             {
-                add => CommandManager.RequerySuggested += value;
-                remove => CommandManager.RequerySuggested -= value;
+                add { CommandManager.RequerySuggested += value; }
+                remove { CommandManager.RequerySuggested -= value; }
             }
         }
 

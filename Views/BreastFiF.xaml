@@ -1,0 +1,81 @@
+﻿<UserControl x:Class="MAAS_BreastPlan_helper.Views.BreastFiFView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MAAS_BreastPlan_helper.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="400">
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{x:Null}">
+        <StackPanel Margin="10" Background="White" Style="{x:Null}">
+            <!-- Description Panel -->
+            <GroupBox Header="Breast Field-in-Field" Margin="5" Style="{x:Null}">
+                <StackPanel Margin="5">
+                    <TextBlock Text="This tool creates a multi-segmented field-in-field breast plan with automatic MLC adjustments based on the dose distribution." 
+                               TextWrapping="Wrap" 
+                               Margin="0,0,0,10" 
+                               Style="{x:Null}" />
+                    
+                    <TextBlock Text="Requirements:" 
+                               FontWeight="Bold" 
+                               Margin="0,0,0,5" 
+                               Style="{x:Null}" />
+                    
+                    <TextBlock TextWrapping="Wrap" 
+                               Margin="10,0,0,10" 
+                               Style="{x:Null}">
+                        <Run Text="• A plan with two existing beams: one labeled 'MED' and one labeled 'LAT'" />
+                    </TextBlock>
+                </StackPanel>
+            </GroupBox>
+            
+            <!-- Number of Subfields -->
+            <GroupBox Header="Subfield Configuration" Margin="5" Style="{x:Null}">
+                <StackPanel Margin="5">
+                    <TextBlock Text="Select the number of subfields:" 
+                               FontWeight="Bold" 
+                               Margin="0,0,0,5" 
+                               Style="{x:Null}" />
+                    
+                    <ComboBox Margin="0,0,0,10" 
+                              SelectedIndex="{Binding SelectedSubFieldCount}"
+                              Style="{x:Null}">
+                        <ComboBoxItem Content="3 Subfields" />
+                        <ComboBoxItem Content="4 Subfields" />
+                        <ComboBoxItem Content="5 Subfields" />
+                        <ComboBoxItem Content="6 Subfields" />
+                    </ComboBox>
+                </StackPanel>
+            </GroupBox>
+            
+            <!-- Execute Section -->
+            <GroupBox Header="Execute" Margin="5" Style="{x:Null}">
+                <StackPanel Margin="5">
+                    <TextBlock Text="{Binding StatusMessage}" 
+                               Foreground="Red" 
+                               TextWrapping="Wrap" 
+                               Margin="0,0,0,10" 
+                               Style="{x:Null}" />
+                    
+                    <Button Content="Create Field-in-Field Plan" 
+                            Command="{Binding ExecuteCommand}" 
+                            Height="40" 
+                            Margin="0,5,0,5" 
+                            Background="#007ACC" 
+                            Foreground="White">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

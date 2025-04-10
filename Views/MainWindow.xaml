@@ -64,6 +64,17 @@
                     <!-- Content for Fluence Extension -->
                 </GroupBox>
             </metro:MetroTabItem>
+            
+            <metro:MetroTabItem x:Name="BreastFiFTab">
+                <metro:MetroTabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="Breast Field-in-Field" FontWeight="DemiBold"/>
+                    </DataTemplate>
+                </metro:MetroTabItem.HeaderTemplate>
+                <GroupBox Header="Breast Field-in-Field Configuration" Margin="5">
+                    <!-- Content for Breast Field-in-Field -->
+                </GroupBox>
+            </metro:MetroTabItem>
         </metro:MetroAnimatedTabControl>
 
         <!-- Footer / Legal Notice -->

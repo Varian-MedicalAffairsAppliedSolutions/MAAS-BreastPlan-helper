@@ -5,14 +5,15 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
+using MAAS_BreastPlan_helper.Models;
 using MAAS_BreastPlan_helper;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using Newtonsoft.Json;
-using MAAS_BreastPlan_helper.MAAS_BreastPlan_helper;
 using System.Windows.Media.Imaging;
 using MAAS.Common.EulaVerification;
+using MAAS_BreastPlan_helper.ViewModels;
 
 // TODO: Uncomment the following line if the script requires write access.
 //15.x or later:
@@ -77,25 +78,25 @@ namespace VMS.TPS
                 // Load config.json
                 var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 var jsonPath = Path.Combine(path, "config.json");
-                MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass settings = null;
+                SettingsClass settings = null;
 
                 try
                 {
                     if (File.Exists(jsonPath))
                     {
                         string jsonContent = File.ReadAllText(jsonPath);
-                        settings = JsonConvert.DeserializeObject<MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass>(jsonContent);
+                        settings = JsonConvert.DeserializeObject<SettingsClass>(jsonContent);
                     }
                     else
                     {
                         MessageBox.Show("Config file not found. Default settings will be used.");
-                        settings = new MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass();
+                        settings = new SettingsClass();
                     }
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Error reading config.json: {ex.Message}");
-                    settings = new MAAS_BreastPlan_helper.MAAS_BreastPlan_helper.SettingsClass();
+                    settings = new SettingsClass();
                 }
 
                 // Merge license-specific values into settings
@@ -154,8 +155,7 @@ namespace VMS.TPS
                 }
 
                 // Launch UI
-                var esapiWorker = new EsapiWorker(context);
-                var viewModel = new MainViewModel(settings, jsonPath, esapiWorker);
+                var viewModel = new MainViewModel(context, settings);
                 var mainWindow = new MainWindow(context, settings, jsonPath);
                 mainWindow.DataContext = viewModel;
                 mainWindow.ShowDialog();

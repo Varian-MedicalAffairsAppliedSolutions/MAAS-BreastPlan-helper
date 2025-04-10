@@ -17,7 +17,7 @@ using VMS.TPS.Common.Model.Types;
 
 
 namespace MAAS_BreastPlan_helper
-{  
+{
     public class OffsetBeam
     {
         public string BeamID { get; set; }
@@ -146,7 +146,7 @@ namespace MAAS_BreastPlan_helper
             beamParams.scale = fields[fieldSelected].TreatmentUnit.MachineScaleDisplayName;
         }
 
-        public EthosBeamDialogViewModel(ScriptContext ctx, EsapiWorker esapiWorker)
+        public EthosBeamDialogViewModel(ScriptContext ctx)
         {
             // ctor
             context = ctx;
@@ -369,7 +369,7 @@ namespace MAAS_BreastPlan_helper
 
             foreach (var bm in to_remove)
             {
-                 ext_plan.RemoveBeam(bm);
+                ext_plan.RemoveBeam(bm);
             }
 
             fields.Clear();
@@ -382,7 +382,7 @@ namespace MAAS_BreastPlan_helper
 
             Output += "\n - Removed Fields";
         }
-        
+
         public void CreateBeams()
         {
             if (!modifying)
