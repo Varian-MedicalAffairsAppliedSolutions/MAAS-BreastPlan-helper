@@ -148,12 +148,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             set { SetProperty(ref selectedBreastSide, value); }
         }
 
-        private double maxDoseGoal;
-
-        public double MaxDoseGoal
+        private string _maxDoseGoal;
+        public string MaxDoseGoal
         {
-            get { return maxDoseGoal; }
-            set { SetProperty(ref maxDoseGoal, value); }
+            get => _maxDoseGoal;
+            set => SetProperty(ref _maxDoseGoal, value);
         }
 
 
@@ -384,7 +383,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
             }
 
-            MaxDoseGoal = settings.MaxDoseGoal;
+            MaxDoseGoal = settings.MaxDoseGoal.ToString();
 
             SelectedEnergy = Utils.GetFluenceEnergyMode(Plan.Beams.Where(b => !b.IsSetupField).First()).Item2;
 
@@ -631,7 +630,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // -- Body --
             // - Upper 0 % Volume, 108 % Rx Dose – Priority 200
             if (Settings.Debug) { await UpdateListBox("Creating upper 0 % Volume, 108 % Rx Dose – Priority 500"); }
-            optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal / 100) - 0.01) * RxDose.Dose, RxDose.Unit), 0, 500);
+            optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue((double.Parse(MaxDoseGoal) / 100.0 - 0.01) * RxDose.Dose, RxDose.Unit), 0, 500);
             ////await UpdateListBox($"Added 5");
             // -- 91 % IDL structure --
             // - Upper 0 % Volume, 103 % Rx Dose – Priority 141
@@ -803,18 +802,32 @@ namespace MAAS_BreastPlan_helper.ViewModels
             try
             {
                 AddStatusMessage("Starting Auto 3D Sliding Window planning...");
-                StatusMessage = "Executing 3D sliding window operation...";
+                UpdateStatusMessage("Executing 3D sliding window operation...");
                 
-                // Add implementation here
+                // Implementation for Auto 3D Sliding Window planning
+                OnCreateBreastPlanAsync();
                 
                 AddStatusMessage("Operation completed successfully.");
-                StatusMessage = "3D sliding window operation completed successfully.";
+                UpdateStatusMessage("3D sliding window operation completed successfully.");
             }
             catch (Exception ex)
             {
                 AddStatusMessage($"Error: {ex.Message}");
-                StatusMessage = $"Error: {ex.Message}";
+                UpdateStatusMessage($"Error: {ex.Message}");
             }
+        }
+
+        // Add status message references to missing locations
+        private void UpdateStatusMessage(string message)
+        {
+            StatusMessage = message;
+        }
+
+        private string _statusMessage;
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
         }
     }
 }

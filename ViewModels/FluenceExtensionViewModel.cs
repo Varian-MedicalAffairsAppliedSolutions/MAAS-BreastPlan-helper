@@ -184,11 +184,17 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
                 processor.ProcessBeams(selectedBeams, eps);
 
-                StatusMessage = "Fluence extension completed successfully";
+                StatusMessage = "Fluence extension completed successfully.";
+                
+                // Show message box with the created plan name
+                MessageBox.Show($"Plan '{eps.Id}' has been created successfully.", 
+                                "Fluence Extension Complete", 
+                                MessageBoxButton.OK, 
+                                MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Error processing beams: {ex.Message}";
+                StatusMessage = $"Error: {ex.Message}";
             }
         }
 
