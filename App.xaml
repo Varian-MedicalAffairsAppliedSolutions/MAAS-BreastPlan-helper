@@ -10,6 +10,9 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- Standard WPF Converters -->
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
             <!-- Custom Metro Styles -->
             <Style x:Key="MetroLabel" TargetType="Label">
                 <Setter Property="FontWeight" Value="DemiBold"/>

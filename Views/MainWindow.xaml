@@ -72,7 +72,20 @@
                     </DataTemplate>
                 </metro:MetroTabItem.HeaderTemplate>
                 <GroupBox Header="Breast Field-in-Field Configuration" Margin="5">
-                    <!-- Content for Breast Field-in-Field -->
+                    <TextBlock>
+                        Breast Field-in-Field View
+                    </TextBlock>
+                </GroupBox>
+            </metro:MetroTabItem>
+            
+            <metro:MetroTabItem x:Name="TangentPlacementTab">
+                <metro:MetroTabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="Tangent Placement" FontWeight="DemiBold"/>
+                    </DataTemplate>
+                </metro:MetroTabItem.HeaderTemplate>
+                <GroupBox Header="Tangent Placement Configuration" Margin="5">
+                    <!-- Will be populated with the TangentPlacementView in code-behind -->
                 </GroupBox>
             </metro:MetroTabItem>
         </metro:MetroAnimatedTabControl>

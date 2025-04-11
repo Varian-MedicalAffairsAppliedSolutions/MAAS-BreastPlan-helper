@@ -26,6 +26,8 @@
                                Margin="10,0,0,10" 
                                Style="{x:Null}">
                         <Run Text="• A plan with two existing beams: one labeled 'MED' and one labeled 'LAT'" />
+                        <LineBreak />
+                        <Run Text="• Body contour" />
                     </TextBlock>
                 </StackPanel>
             </GroupBox>

@@ -203,6 +203,10 @@
     <Compile Include="Views\BreastFiF.xaml.cs">
       <DependentUpon>BreastFiF.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\TangentPlacement.xaml.cs">
+      <DependentUpon>TangentPlacement.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\TangentPlacementViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="App.xaml">
@@ -226,6 +230,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\BreastFiF.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\TangentPlacement.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -19,6 +19,7 @@ namespace MAAS_BreastPlan_helper
             Auto3DSWTab.Content = new Auto3dSlidingWindow() { DataContext = new Auto3dSlidingWindowViewModel(context, settings, json_path) };
             FluenceExtensionTab.Content = new FluenceExtensionView() { DataContext = new FluenceExtensionViewModel(context, settings) };
             BreastFiFTab.Content = new BreastFiFView() { DataContext = new BreastFiFViewModel(context, settings) };
+            TangentPlacementTab.Content = new TangentPlacementView() { DataContext = new TangentPlacementViewModel(context, settings) };
         }
     }
 }
