@@ -156,31 +156,31 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     if (sc.PlanSetup != null)
                     {
                         var treatmentUnit = sc.PlanSetup.Beams.FirstOrDefault()?.TreatmentUnit;
-                        MachineScale = treatmentUnit?.MachineScaleDisplayName ?? "Unknown";
-                    }
-                    else
-                    {
-                        MachineScale = "Unknown";
-                    }
+                    MachineScale = treatmentUnit?.MachineScaleDisplayName ?? "Unknown";
+                }
+                else
+                {
+                    MachineScale = "Unknown";
+                }
 
-                    // Initialize fields (beams)
+                // Initialize fields (beams)
                     if (sc.PlanSetup != null)
-                    {
+                {
                         Fields = new ObservableCollection<Beam>(sc.PlanSetup.Beams);
-                        FieldSelected = 0;
-                    }
+                    FieldSelected = 0;
+                }
 
-                    // Initialize structures
+                // Initialize structures
                     if (sc.StructureSet != null)
-                    {
-                        AllStructures = new ObservableCollection<string>(
+                {
+                    AllStructures = new ObservableCollection<string>(
                             sc.StructureSet.Structures
-                                .Where(s => !s.IsEmpty && s.Id != "")
-                                .Select(s => s.Id)
-                        );
-                        AlignSelected = 0;
-                        TargetSelected = 0;
-                    }
+                            .Where(s => !s.IsEmpty && s.Id != "")
+                            .Select(s => s.Id)
+                    );
+                    AlignSelected = 0;
+                    TargetSelected = 0;
+                }
                 });
 
                 // Initialize sample beams
@@ -234,13 +234,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
             _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
                 if (!_modifying)
-                {
+            {
                     sc.Patient.BeginModifications();
                     _modifying = true;
-                }
-                
-                FindBeamAngles();
-                Output += "\nBeams created successfully.";
+            }
+            
+            FindBeamAngles();
+            Output += "\nBeams created successfully.";
             },
             ex =>
             {
@@ -277,12 +277,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
             _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
                 if (!_modifying)
-                {
+            {
                     sc.Patient.BeginModifications();
                     _modifying = true;
-                }
+            }
 
-                Output += "\n -- Calculated Collimator Angles";
+            Output += "\n -- Calculated Collimator Angles";
             },
             ex =>
             {
@@ -295,12 +295,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
             _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
                 if (!_modifying)
-                {
+            {
                     sc.Patient.BeginModifications();
                     _modifying = true;
-                }
+            }
 
-                Output += "\n -- MLC shapes updated";
+            Output += "\n -- MLC shapes updated";
             },
             ex =>
             {
@@ -318,12 +318,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
             _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
                 if (!_modifying)
-                {
+            {
                     sc.Patient.BeginModifications();
                     _modifying = true;
-                }
-                
-                Output += "\n - Removed selected fields";
+            }
+            
+            Output += "\n - Removed selected fields";
             },
             ex =>
             {

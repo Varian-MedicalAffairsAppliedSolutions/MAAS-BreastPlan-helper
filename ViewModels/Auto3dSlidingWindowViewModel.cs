@@ -345,63 +345,66 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             StatusBoxItems = new ObservableCollection<string>();
 
-            // Initialize observable collections        
-            var ss = Plan.StructureSet;
-            if (ss == null) { throw new Exception("Structure set is null"); }
-            var structs = Plan.StructureSet.Structures;
-            if (structs == null) { throw new Exception("Structures are null"); }
-            var lHeartStructures = structs.Where(s => s.Id.ToLower().Contains("heart")).ToList();
-            if (lHeartStructures.Count == 0) { throw new Exception("Heart structures are empty"); }
-
-            HeartStructures = new ObservableCollection<Structure>();
-            foreach (var structure in lHeartStructures) { HeartStructures.Add(structure); }
-            Heart = HeartStructures.FirstOrDefault();
-
-            BreastSides = new ObservableCollection<SIDE>() { SIDE.RIGHT, SIDE.LEFT };
-            SelectedBreastSide = FindTreatmentSide(Plan); ;
-
-            var lLungStructures = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("lung")).ToList();
-            LungStructures = new ObservableCollection<Structure>();
-            foreach (var strucuture in lLungStructures) { LungStructures.Add(strucuture); }
-
-            // Select lung structure based on the position of the center point
-            if (SelectedBreastSide == SIDE.LEFT)
+            // Initialize observable collections using EsapiWorker to ensure fresh structure references
+            _esapiWorker.RunWithWait(sc =>
             {
-                Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x > 0).FirstOrDefault();
-            }
-            else
-            {
-                Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
-            }
+                var ss = sc.StructureSet;
+                if (ss == null) { throw new Exception("Structure set is null"); }
+                var structs = ss.Structures;
+                if (structs == null) { throw new Exception("Structures are null"); }
+                var lHeartStructures = structs.Where(s => s.Id.ToLower().Contains("heart")).ToList();
+                if (lHeartStructures.Count == 0) { throw new Exception("Heart structures are empty"); }
 
-            MaxDoseGoal = _settings.MaxDoseGoal.ToString();
+                HeartStructures = new ObservableCollection<Structure>();
+                foreach (var structure in lHeartStructures) { HeartStructures.Add(structure); }
+                Heart = HeartStructures.FirstOrDefault();
 
-            SelectedEnergy = Utils.GetFluenceEnergyMode(Plan.Beams.Where(b => !b.IsSetupField).First()).Item2;
+                BreastSides = new ObservableCollection<SIDE>() { SIDE.RIGHT, SIDE.LEFT };
+                SelectedBreastSide = FindTreatmentSide(sc.ExternalPlanSetup);
 
-            var LMCSplit = splitLMC(_settings.LMCModel);
-            LMCModel = LMCSplit.Item1;
-            LMCVersion = LMCSplit.Item2;
+                var lLungStructures = ss.Structures.Where(s => s.Id.ToLower().Contains("lung")).ToList();
+                LungStructures = new ObservableCollection<Structure>();
+                foreach (var structure in lLungStructures) { LungStructures.Add(structure); }
 
-            PTVItems = new ObservableCollection<Structure>();
-            foreach (var s in Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("ptv")))
-            {
-                PTVItems.Add(s);
-            }
+                // Select lung structure based on the position of the center point
+                if (SelectedBreastSide == SIDE.LEFT)
+                {
+                    Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x > 0).FirstOrDefault();
+                }
+                else
+                {
+                    Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
+                }
 
-            // Initialize Custom ptv chekbox to false
-            CustomPTV = false;
-            LBLPTVEnabled = false;
-            CBOPTVEnabled = false;
+                MaxDoseGoal = _settings.MaxDoseGoal.ToString();
+
+                SelectedEnergy = Utils.GetFluenceEnergyMode(sc.ExternalPlanSetup.Beams.Where(b => !b.IsSetupField).First()).Item2;
+
+                var LMCSplit = splitLMC(_settings.LMCModel);
+                LMCModel = LMCSplit.Item1;
+                LMCVersion = LMCSplit.Item2;
+
+                PTVItems = new ObservableCollection<Structure>();
+                foreach (var s in ss.Structures.Where(s => s.Id.ToLower().Contains("ptv")))
+                {
+                    PTVItems.Add(s);
+                }
+
+                // Initialize Custom ptv checkbox to false
+                CustomPTV = false;
+                LBLPTVEnabled = false;
+                CBOPTVEnabled = false;
+
+                var body = ss.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
+
+                SepIso = Utils.ComputeBeamSeparation(sc.ExternalPlanSetup.Beams.First(), sc.ExternalPlanSetup.Beams.Last(), body); // center of field iso plane
+                SepIsoEdge = Utils.ComputeBeamSeparationWholeField(sc.ExternalPlanSetup.Beams.First(), sc.ExternalPlanSetup.Beams.Last(), body, SelectedBreastSide); // field edge iso plane
+
+                // Initialize max dose goal
+                MaxDoseGoal = "107";
+            });
 
             CbCustomPTV_Click = new DelegateCommand(OnCustomPTV_Click);
-
-            var body = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
-
-            SepIso = Utils.ComputeBeamSeparation(Plan.Beams.First(), Plan.Beams.Last(), body); // center of field iso plane
-            SepIsoEdge = Utils.ComputeBeamSeparationWholeField(Plan.Beams.First(), Plan.Beams.Last(), body, SelectedBreastSide); // field edge iso plane
-
-            // Initialize max dose goal
-            MaxDoseGoal = "107";
             
             // Add initial status message
             AddStatusMessage("Auto 3D Sliding Window ready.");
@@ -454,18 +457,17 @@ namespace MAAS_BreastPlan_helper.ViewModels
             await _esapiWorker.ExecuteWithErrorHandlingAsync(async sc =>
             {
                 // Save some properties back to config
-                // LMC
-
                 _settings.LMCModel = joinLMC(LMCModel, LMCVersion);
-
                 File.WriteAllText(JsonPath, JsonConvert.SerializeObject(_settings));
 
-                // Copy plan and set new name
-                var NewPlan = sc.Course.CopyPlanSetup(Plan) as ExternalPlanSetup;
-                NewPlan.Id = Utils.GetNewPlanName(sc.Course, Plan.Id, 13);
+                // Create a completely isolated copy of the plan to work with
+                // This ensures we don't interfere with the original plan context used by other tabs
+                var originalPlan = sc.ExternalPlanSetup;
+                var NewPlan = sc.Course.CopyPlanSetup(originalPlan) as ExternalPlanSetup;
+                NewPlan.Id = Utils.GetNewPlanName(sc.Course, originalPlan.Id, 13);
 
-            NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
-            NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, Plan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
+            NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, originalPlan.PhotonCalculationModel);
+            NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, originalPlan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
 
                 if (_settings.Debug) { await UpdateListBox($"New plan created with id {NewPlan.Id}"); }
                 Log.Debug($"New plan created with id {NewPlan.Id}");
@@ -475,16 +477,16 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 var body = CopiedSS.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
 
                 // Perform dose calc
-                NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
+                NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, originalPlan.PhotonCalculationModel);
                 NewPlan.CalculateDose();
 
-                NewPlan.SetPrescription((int)Plan.NumberOfFractions, Plan.DosePerFraction, Plan.TreatmentPercentage);
+                NewPlan.SetPrescription((int)originalPlan.NumberOfFractions, originalPlan.DosePerFraction, originalPlan.TreatmentPercentage);
                 //REM: NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
 
                 if (_settings.Debug) { await UpdateListBox($"Set dose normalization to global max"); }
             Log.Debug($"Set dose normalization to global max");
 
-            var maxBodyDose = Plan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
+            var maxBodyDose = originalPlan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
             NewPlan.PlanNormalizationValue = maxBodyDose.Dose;
 
             //var DM3D = NewPlan.Dose.DoseMax3D;
@@ -510,10 +512,16 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             else
             {
+                // Use fresh structure reference from new plan
+                var newSelectedPTV = CopiedSS.Structures.FirstOrDefault(s => s.Id == SelectedPTV?.Id);
+                if (newSelectedPTV == null)
+                {
+                    throw new Exception($"Selected PTV '{SelectedPTV?.Id}' not found in copied structure set.");
+                }
 
-                PTV_OPT.SegmentVolume = SelectedPTV.SegmentVolume;
-                if (_settings.Debug) { await UpdateListBox($"Using custom PTV: {SelectedPTV.Id} with volume: {SelectedPTV.Volume:F2} CC"); }
-                Log.Debug($"Using custom PTV: {SelectedPTV.Id} with volume: {SelectedPTV.Volume:F2} CC");
+                PTV_OPT.SegmentVolume = newSelectedPTV.SegmentVolume;
+                if (_settings.Debug) { await UpdateListBox($"Using custom PTV: {newSelectedPTV.Id} with volume: {newSelectedPTV.Volume:F2} CC"); }
+                Log.Debug($"Using custom PTV: {newSelectedPTV.Id} with volume: {newSelectedPTV.Volume:F2} CC");
             }
 
             if (PTV_OPT.Volume < 0.0001)
@@ -530,8 +538,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 AddStructIfNotExists($"__IDL{idl}", CopiedSS, NewPlan, new DoseValue(idl, DoseUnit.Percent), true);
             }
 
-            // Spare heart and lung on PTV
-            Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
+            // Spare heart and lung on PTV - use fresh structure references from new plan
+            var newIpsiLung = CopiedSS.Structures.FirstOrDefault(s => s.Id == Ipsi_lung?.Id);
+            var newHeart = CopiedSS.Structures.FirstOrDefault(s => s.Id == Heart?.Id);
+            
+            if (newIpsiLung != null && newHeart != null)
+            {
+                Utils.SpareLungHeart(PTV_OPT, newIpsiLung, newHeart, CopiedSS);
+            }
 
 
             // Optimization options
@@ -541,14 +555,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
 
-            var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
+            var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(originalPlan.Beams.First());
             string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
             string energy_mode_id = unpack_getFluenceEnergyMode.Item2;
 
             var machineParameters = new ExternalBeamMachineParameters(
-                Plan.Beams.First().TreatmentUnit.Id,
+                originalPlan.Beams.First().TreatmentUnit.Id,
                 energy_mode_id,
-                Plan.Beams.First().DoseRate,
+                originalPlan.Beams.First().DoseRate,
                 "STATIC",
                 primary_fluence_mode
             );
@@ -562,7 +576,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 }
             }
 
-            foreach (var bm in Plan.Beams.Where(b => !b.IsSetupField).ToList())
+            foreach (var bm in originalPlan.Beams.Where(b => !b.IsSetupField).ToList())
             {
                 //  beam is a not a setup field 
                 Beam Temp = NewPlan.AddStaticBeam(
@@ -579,7 +593,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Get optimization setup
             var optSet = NewPlan.OptimizationSetup;
-            var RxDose = Plan.TotalDose;
+            var RxDose = originalPlan.TotalDose;
 
             // Clear all previous optimization objectives
                 foreach (var oldObjective in optSet.Objectives)
@@ -711,9 +725,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                         // Add objectives for hot and cold spot
                         //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
 
-                        var RxDose_ = Plan.TotalDose;
-                        optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 35);
-                        optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 40);
+                        optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 0, 35);
+                        optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose.Dose, RxDose.Unit), 100, 40);
 
                     }
 
@@ -735,6 +748,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
                 if (_settings.Debug) { await UpdateListBox("Complete. Close window to view plan."); }
                 Log.Debug("Complete. Close window to view plan");
+
+                // Notify completion and trigger refresh of other ViewModels
+                StatusMessage = "Plan creation completed. Other tabs will be refreshed automatically.";
+                PlanCreationCompleted = true;
 
                 MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
             },
@@ -826,6 +843,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
         {
             get { return _statusMessage; }
             set { SetProperty(ref _statusMessage, value); }
+        }
+
+        private bool _planCreationCompleted = false;
+        public bool PlanCreationCompleted
+        {
+            get { return _planCreationCompleted; }
+            set { SetProperty(ref _planCreationCompleted, value); }
         }
     }
 }

@@ -35,6 +35,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
         public EthosBeamDialogViewModel EthosBeamDialogViewModel { get; }
 
         public DelegateCommand ExecuteCommand { get; private set; }
+        public DelegateCommand<string> TabSelectionChangedCommand { get; private set; }
 
         public MainViewModel(EsapiWorker esapiWorker, SettingsClass settings, string jsonPath = null)
         {
@@ -49,6 +50,18 @@ namespace MAAS_BreastPlan_helper.ViewModels
             EthosBeamDialogViewModel = new EthosBeamDialogViewModel(_esapiWorker);
 
             ExecuteCommand = new DelegateCommand(Execute, CanExecute);
+            TabSelectionChangedCommand = new DelegateCommand<string>(OnTabSelectionChanged);
+            
+            // Watch for Auto3dSlidingWindow completion to refresh other ViewModels
+            Auto3dSlidingWindowViewModel.PropertyChanged += (sender, e) =>
+            {
+                if (e.PropertyName == nameof(Auto3dSlidingWindowViewModel.PlanCreationCompleted) && 
+                    Auto3dSlidingWindowViewModel.PlanCreationCompleted)
+                {
+                    RefreshAllViewModels();
+                    Auto3dSlidingWindowViewModel.PlanCreationCompleted = false; // Reset flag
+                }
+            };
             
             // Set window title based on validation status
             WindowTitle = AppConfigHelper.GetBoolValue("ValidForClinicalUse") 
@@ -80,6 +93,57 @@ namespace MAAS_BreastPlan_helper.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Error: {ex.Message}";
+            }
+        }
+
+        private void OnTabSelectionChanged(string tabName)
+        {
+            try
+            {
+                // Refresh structure references when navigating to tabs that could have stale structure references
+                if (tabName == "FluenceExtension")
+                {
+                    FluenceExtensionViewModel.RefreshData();
+                    StatusMessage = "Fluence Extension tab loaded - structure references refreshed.";
+                }
+                else if (tabName == "TangentPlacement")
+                {
+                    TangentPlacementViewModel.RefreshData();
+                    StatusMessage = "Tangent Placement tab loaded - structure references refreshed.";
+                }
+                else if (tabName == "Auto3dSlidingWindow")
+                {
+                    StatusMessage = "Auto 3D Sliding Window tab loaded.";
+                }
+                else if (tabName == "BreastFiF")
+                {
+                    StatusMessage = "Breast Field-in-Field tab loaded.";
+                }
+                else if (tabName == "EthosBeamDialog")
+                {
+                    StatusMessage = "Ethos Beam Dialog tab loaded.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error refreshing tab data: {ex.Message}";
+            }
+        }
+
+        private void RefreshAllViewModels()
+        {
+            try
+            {
+                // Force refresh all ViewModels that store structure references
+                FluenceExtensionViewModel.RefreshData();
+                TangentPlacementViewModel.RefreshData();
+                // Note: We don't refresh Auto3dSlidingWindowViewModel as it just completed its operation
+                
+                StatusMessage = "All ViewModels refreshed after plan creation.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error refreshing ViewModels: {ex.Message}";
             }
         }
     }

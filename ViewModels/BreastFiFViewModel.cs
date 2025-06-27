@@ -62,7 +62,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 _esapiWorker.ExecuteWithErrorHandling(sc =>
                 {
                     ExecuteBreastFiF(sc);
-                    StatusMessage = "BreastFiF completed successfully.";
+                StatusMessage = "BreastFiF completed successfully.";
                 },
                 ex =>
                 {

@@ -261,7 +261,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="lib\" />
-    <Folder Include="Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

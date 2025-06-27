@@ -182,13 +182,26 @@ namespace MAAS_BreastPlan_helper.ViewModels
             Initialize();
         }
 
+        public void RefreshData()
+        {
+            Initialize();
+        }
+
         private void Initialize()
         {
             try
             {
                 StatusMessage = "Initializing...";
                 
-                // Load structures using EsapiWorker
+                // Clear existing structure references first to avoid disposed object access
+                _selectedBody = null;
+                _selectedPTV = null;
+                _selectedLung = null;
+                _selectedHeart = null;
+                _selectedContralateralBreast = null;
+                _structures?.Clear();
+                
+                // Load structures using EsapiWorker to ensure fresh structure references
                 _esapiWorker.Run(context =>
                 {
                     if (context?.StructureSet != null)
