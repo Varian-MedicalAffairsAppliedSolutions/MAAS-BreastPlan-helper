@@ -6,14 +6,17 @@
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400">   
     
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{x:Null}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                  HorizontalScrollBarVisibility="Disabled"
+                  CanContentScroll="False"
+                  Style="{x:Null}">
         <StackPanel Margin="10" Background="White" Style="{x:Null}">
             <!-- PTV Structure Selection -->
             <GroupBox Header="PTV Structure" Margin="5" Style="{x:Null}">
                 <StackPanel Margin="5">
                     <TextBlock Text="Select the PTV structure:" FontWeight="Bold" Margin="0,0,0,5" Style="{x:Null}" />
                     <ComboBox ItemsSource="{Binding Structures}" Style="{x:Null}"
-                          SelectedItem="{Binding SelectedPTVStructure}" 
+                          SelectedItem="{Binding SelectedPTVStructure, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                           DisplayMemberPath="Id"
                           Margin="0,0,0,10" />
                 </StackPanel>
@@ -68,17 +71,27 @@
                        TextWrapping="Wrap"
                        Margin="0,5" />
 
-                <Button Content="Confirm" 
+                <Button Content="Execute Fluence Extension" 
                     Command="{Binding ConfirmSelectionCommand}"
-                    Height="40" 
-                    Margin="0,10,0,5"
+                    Height="50" 
+                    Margin="0,15,0,15"
                     Background="#007ACC" 
-                    Foreground="White">
+                    Foreground="White"
+                    FontSize="14"
+                    FontWeight="Bold">
                     <Button.Style>
                         <Style TargetType="Button"> 
+                            <Setter Property="BorderThickness" Value="2"/>
+                            <Setter Property="BorderBrush" Value="#005A9E"/>
                             <Style.Triggers>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Opacity" Value="0.5"/>
+                                    <Setter Property="Background" Value="#CCCCCC"/>
+                                    <Setter Property="Foreground" Value="#666666"/>
+                                    <Setter Property="BorderBrush" Value="#AAAAAA"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="True">
+                                    <Setter Property="Background" Value="#007ACC"/>
+                                    <Setter Property="Foreground" Value="White"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
