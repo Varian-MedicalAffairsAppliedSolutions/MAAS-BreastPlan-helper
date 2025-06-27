@@ -15,6 +15,7 @@ using Prism.Mvvm;
 using System.Windows.Input;
 using Prism.Commands;
 using MAAS_BreastPlan_helper.Models;
+using MAAS_BreastPlan_helper.Services;
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
@@ -28,7 +29,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
     public class TangentPlacementViewModel : BindableBase
     {
-        private readonly ScriptContext _context;
+        private readonly EsapiWorker _esapiWorker;
         private readonly SettingsClass _settings;
         private string _statusMessage = "Ready";
         private bool _statusIsError = false;
@@ -52,62 +53,62 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public string StatusMessage
         {
-            get => _statusMessage;
-            set => SetProperty(ref _statusMessage, value);
+            get { return _statusMessage; }
+            set { SetProperty(ref _statusMessage, value); }
         }
 
         public bool StatusIsError
         {
-            get => _statusIsError;
-            set => SetProperty(ref _statusIsError, value);
+            get { return _statusIsError; }
+            set { SetProperty(ref _statusIsError, value); }
         }
 
         public bool HasContralateralBreast
         {
-            get => _hasContralateralBreast;
-            set => SetProperty(ref _hasContralateralBreast, value);
+            get { return _hasContralateralBreast; }
+            set { SetProperty(ref _hasContralateralBreast, value); }
         }
 
         public bool UseDivergenceCorrection
         {
-            get => _useDivergenceCorrection;
-            set => SetProperty(ref _useDivergenceCorrection, value);
+            get { return _useDivergenceCorrection; }
+            set { SetProperty(ref _useDivergenceCorrection, value); }
         }
         
         public Structure SelectedBody
         {
-            get => _selectedBody;
-            set => SetProperty(ref _selectedBody, value);
+            get { return _selectedBody; }
+            set { SetProperty(ref _selectedBody, value); }
         }
 
         public Structure SelectedPTV
         {
-            get => _selectedPTV;
-            set => SetProperty(ref _selectedPTV, value);
+            get { return _selectedPTV; }
+            set { SetProperty(ref _selectedPTV, value); }
         }
 
         public Structure SelectedLung
         {
-            get => _selectedLung;
-            set => SetProperty(ref _selectedLung, value);
+            get { return _selectedLung; }
+            set { SetProperty(ref _selectedLung, value); }
         }
 
         public Structure SelectedHeart
         {
-            get => _selectedHeart;
-            set => SetProperty(ref _selectedHeart, value);
+            get { return _selectedHeart; }
+            set { SetProperty(ref _selectedHeart, value); }
         }
 
         public Structure SelectedContralateralBreast
         {
-            get => _selectedContralateralBreast;
-            set => SetProperty(ref _selectedContralateralBreast, value);
+            get { return _selectedContralateralBreast; }
+            set { SetProperty(ref _selectedContralateralBreast, value); }
         }
 
         public string DetectedLaterality
         {
-            get => _detectedLaterality;
-            set => SetProperty(ref _detectedLaterality, value);
+            get { return _detectedLaterality; }
+            set { SetProperty(ref _detectedLaterality, value); }
         }
 
         public string DetectedLateralityEnglish
@@ -128,13 +129,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public ObservableCollection<Structure> Structures
         {
-            get => _structures;
-            set => SetProperty(ref _structures, value);
+            get { return _structures; }
+            set { SetProperty(ref _structures, value); }
         }
         
         public OptimizationTarget SelectedOptimizationTarget
         {
-            get => _selectedOptimizationTarget;
+            get { return _selectedOptimizationTarget; }
             set
             {
                 if (SetProperty(ref _selectedOptimizationTarget, value))
@@ -147,7 +148,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
         
         public bool IsBeamEyeViewVisible
         {
-            get => _isBeamEyeViewVisible;
+            get { return _isBeamEyeViewVisible; }
             set
             {
                 if (SetProperty(ref _isBeamEyeViewVisible, value))
@@ -159,25 +160,30 @@ namespace MAAS_BreastPlan_helper.ViewModels
         
         public UIElement MedialBeamEyeView
         {
-            get => _medialBeamEyeView;
-            set => SetProperty(ref _medialBeamEyeView, value);
+            get { return _medialBeamEyeView; }
+            set { SetProperty(ref _medialBeamEyeView, value); }
         }
         
         public UIElement LateralBeamEyeView
         {
-            get => _lateralBeamEyeView;
-            set => SetProperty(ref _lateralBeamEyeView, value);
+            get { return _lateralBeamEyeView; }
+            set { SetProperty(ref _lateralBeamEyeView, value); }
         }
 
-        public ICommand CreateTangentsCommand { get; private set; }
-        public ICommand ShowBeamEyeViewCommand { get; private set; }
+        public DelegateCommand CreateTangentsCommand { get; private set; }
+        public DelegateCommand ShowBeamEyeViewCommand { get; private set; }
 
-        public TangentPlacementViewModel(ScriptContext context, SettingsClass settings)
+        public TangentPlacementViewModel(EsapiWorker esapiWorker, SettingsClass settings)
         {
-            _context = context;
+            _esapiWorker = esapiWorker;
             _settings = settings;
-            CreateTangentsCommand = new RelayCommand(ExecuteTangentPlacement);
-            ShowBeamEyeViewCommand = new RelayCommand(ShowBeamEyeView);
+            CreateTangentsCommand = new DelegateCommand(() => ExecuteTangentPlacement(null));
+            ShowBeamEyeViewCommand = new DelegateCommand(() => ShowBeamEyeView(null));
+            Initialize();
+        }
+
+        public void RefreshData()
+        {
             Initialize();
         }
 
@@ -187,62 +193,73 @@ namespace MAAS_BreastPlan_helper.ViewModels
             {
                 StatusMessage = "Initializing...";
                 
-                // Load structures
-                if (_context?.StructureSet != null)
+                // Clear existing structure references first to avoid disposed object access
+                _selectedBody = null;
+                _selectedPTV = null;
+                _selectedLung = null;
+                _selectedHeart = null;
+                _selectedContralateralBreast = null;
+                _structures?.Clear();
+                
+                // Load structures using EsapiWorker to ensure fresh structure references
+                _esapiWorker.Run(context =>
                 {
-                    // Create a list of structures with a null option at the top
-                    var structuresList = new List<Structure> { null };
-                    structuresList.AddRange(_context.StructureSet.Structures);
-                    
-                    // Set the Structures collection with the null option included
-                    Structures = new ObservableCollection<Structure>(structuresList);
-                    
-                    // Try to detect breast laterality
-                    var body = _context.StructureSet.Structures.FirstOrDefault(s => s.DicomType == "EXTERNAL");
-                    var ptv = _context.StructureSet.Structures.FirstOrDefault(s => s.Id.ToUpper().Contains("PTV"));
-                    
-                    if (body != null && ptv != null)
+                    if (context?.StructureSet != null)
                     {
-                        SelectedBody = body; // Auto-select body structure
-                        DetectedLaterality = Lateralidade.Lado(body, ptv, _context.StructureSet);
-                        
-                        // Auto-select structures based on laterality
-                        var autoSelectedStructures = AutoSelectStructures(_context.StructureSet, DetectedLaterality);
-                        
-                        // Ensure we have proper debugging information
-                        string debugInfo = "Auto-selected structures:\n";
-                        foreach (var structure in autoSelectedStructures)
+                        // Create a list of structures with a null option at the top
+                        var structuresList = new List<Structure> { null };
+                        structuresList.AddRange(context.StructureSet.Structures);
+
+                        // Set the Structures collection with the null option included
+                        Structures = new ObservableCollection<Structure>(structuresList);
+
+                        // Try to detect breast laterality
+                        var body = context.StructureSet.Structures.FirstOrDefault(s => s.DicomType == "EXTERNAL");
+                        var ptv = context.StructureSet.Structures.FirstOrDefault(s => s.Id.ToUpper().Contains("PTV"));
+
+                        if (body != null && ptv != null)
                         {
-                            debugInfo += $"- {structure.Id}\n";
-                        }
-                        System.Diagnostics.Debug.WriteLine(debugInfo);
-                        
-                        // Assign structures based on index
-                        if (autoSelectedStructures.Count >= 1)
-                        {
-                            SelectedPTV = autoSelectedStructures[0];
-                            System.Diagnostics.Debug.WriteLine($"Set PTV to: {SelectedPTV?.Id}");
-                        }
-                        
-                        if (autoSelectedStructures.Count >= 2)
-                        {
-                            SelectedLung = autoSelectedStructures[1];
-                            System.Diagnostics.Debug.WriteLine($"Set Lung to: {SelectedLung?.Id}");
-                        }
-                        
-                        if (autoSelectedStructures.Count >= 3)
-                        {
-                            SelectedHeart = autoSelectedStructures[2];
-                            System.Diagnostics.Debug.WriteLine($"Set Heart to: {SelectedHeart?.Id}");
-                        }
-                        
-                        if (autoSelectedStructures.Count >= 4)
-                        {
-                            SelectedContralateralBreast = autoSelectedStructures[3];
-                            HasContralateralBreast = true;
+                            SelectedBody = body; // Auto-select body structure
+                            DetectedLaterality = Lateralidade.Lado(body, ptv, context.StructureSet);
+
+                            // Auto-select structures based on laterality
+                            var autoSelectedStructures = AutoSelectStructures(context.StructureSet, DetectedLaterality);
+
+                            // Ensure we have proper debugging information
+                            string debugInfo = "Auto-selected structures:\n";
+                            foreach (var structure in autoSelectedStructures)
+                            {
+                                debugInfo += $"- {structure.Id}\n";
+                            }
+                            System.Diagnostics.Debug.WriteLine(debugInfo);
+
+                            // Assign structures based on index
+                            if (autoSelectedStructures.Count >= 1)
+                            {
+                                SelectedPTV = autoSelectedStructures[0];
+                                System.Diagnostics.Debug.WriteLine($"Set PTV to: {SelectedPTV?.Id}");
+                            }
+
+                            if (autoSelectedStructures.Count >= 2)
+                            {
+                                SelectedLung = autoSelectedStructures[1];
+                                System.Diagnostics.Debug.WriteLine($"Set Lung to: {SelectedLung?.Id}");
+                            }
+
+                            if (autoSelectedStructures.Count >= 3)
+                            {
+                                SelectedHeart = autoSelectedStructures[2];
+                                System.Diagnostics.Debug.WriteLine($"Set Heart to: {SelectedHeart?.Id}");
+                            }
+
+                            if (autoSelectedStructures.Count >= 4)
+                            {
+                                SelectedContralateralBreast = autoSelectedStructures[3];
+                                HasContralateralBreast = true;
+                            }
                         }
                     }
-                }
+                });
                 
                 StatusMessage = "Ready to create tangent fields";
             }
@@ -266,7 +283,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 
                 StatusMessage = "Generating beam's eye view...";
                 
-                var currentPlan = _context.PlanSetup as ExternalPlanSetup;
+                var currentPlan = _esapiWorker.GetValue(context => context.PlanSetup as ExternalPlanSetup);
                 if (currentPlan == null)
                 {
                     StatusMessage = "Please load a treatment plan.";
@@ -302,128 +319,131 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 );
                 
                 // Create temporary beams for visualization
-                _context.Patient.BeginModifications();
+                _esapiWorker.Run(context =>
+                {
+                    context.Patient.BeginModifications();
 
-                // Create a temporary plan for the beam visualization
-                ExternalPlanSetup tempPlan = _context.Course.AddExternalPlanSetup(_context.StructureSet);
-                string originalPlanId = currentPlan.Id;
+                    // Create a temporary plan for the beam visualization
+                    ExternalPlanSetup tempPlan = context.Course.AddExternalPlanSetup(context.StructureSet);
+                    string originalPlanId = currentPlan.Id;
                 
-                // Ensure the temp plan ID doesn't exceed 13 characters
-                const int maxPlanIdLength = 13;
-                string tempPrefix = "TEMP_";
+                    // Ensure the temp plan ID doesn't exceed 13 characters
+                    const int maxPlanIdLength = 13;
+                    string tempPrefix = "TEMP_";
+                    
+                    // Calculate how many characters we can use from the original plan ID
+                    int availableChars = maxPlanIdLength - tempPrefix.Length;
+                    string truncatedId = (originalPlanId.Length > availableChars) 
+                        ? originalPlanId.Substring(0, availableChars) 
+                        : originalPlanId;
+                    
+                    tempPlan.Id = tempPrefix + truncatedId;
                 
-                // Calculate how many characters we can use from the original plan ID
-                int availableChars = maxPlanIdLength - tempPrefix.Length;
-                string truncatedId = (originalPlanId.Length > availableChars) 
-                    ? originalPlanId.Substring(0, availableChars) 
-                    : originalPlanId;
-                
-                tempPlan.Id = tempPrefix + truncatedId;
-                
-                // Check if machine is Halcyon
-                bool isHalcyon = machineId.ToUpper().Contains("HALCYON");
-                
-                // Create leaf positions array
-                int leafCount = 60; // Default for Millennium MLC
-                float[,] leafPositions = new float[2, leafCount];
-                for (int i = 0; i < leafCount; i++)
-                {
-                    leafPositions[0, i] = -100.0f;
-                    leafPositions[1, i] = 100.0f;
-                }
-                
-                Beam medialBeam = null;
-                Beam lateralBeam = null;
-                
-                // Create beams based on laterality and optimization choice
-                try
-                {
-                    if (DetectedLaterality == "Direita")
+                    // Check if machine is Halcyon
+                    bool isHalcyon = machineId.ToUpper().Contains("HALCYON");
+                    
+                    // Create leaf positions array
+                    int leafCount = 60; // Default for Millennium MLC
+                    float[,] leafPositions = new float[2, leafCount];
+                    for (int i = 0; i < leafCount; i++)
                     {
-                        if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast)
+                        leafPositions[0, i] = -100.0f;
+                        leafPositions[1, i] = 100.0f;
+                    }
+                    
+                    Beam medialBeam = null;
+                    Beam lateralBeam = null;
+                    
+                    // Create beams based on laterality and optimization choice
+                    try
+                    {
+                        if (DetectedLaterality == "Direita")
                         {
-                            medialBeam = Campos.TgIntD(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                true, SelectedContralateralBreast, isHalcyon);
-                                
-                            lateralBeam = Campos.TgExtD(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                true, SelectedContralateralBreast, isHalcyon);
-                        }
-                        else
-                        {
-                            medialBeam = Campos.TgIntD(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                false, null, isHalcyon);
-                                
-                            if (UseDivergenceCorrection)
+                            if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast)
                             {
-                                lateralBeam = Campos.TgExtDComCorrecaoDivergencia(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, 
-                                    SelectedPTV, medialBeam, isHalcyon);
-                            }
-                            else
-                            {
+                                medialBeam = Campos.TgIntD(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    true, SelectedContralateralBreast, isHalcyon);
+                                    
                                 lateralBeam = Campos.TgExtD(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                    false, null, isHalcyon);
-                            }
-                        }
-                    }
-                    else // "Esquerda"
-                    {
-                        if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast)
-                        {
-                            medialBeam = Campos.TgIntE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                true, SelectedContralateralBreast, false, null, isHalcyon);
-                                
-                            lateralBeam = Campos.TgExtE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                true, SelectedContralateralBreast, false, null, isHalcyon);
-                        }
-                        else if (SelectedOptimizationTarget == OptimizationTarget.Heart && SelectedHeart != null)
-                        {
-                            medialBeam = Campos.TgIntE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                false, null, true, SelectedHeart, isHalcyon);
-                                
-                            lateralBeam = Campos.TgExtE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                false, null, true, SelectedHeart, isHalcyon);
-                        }
-                        else
-                        {
-                            medialBeam = Campos.TgIntE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                false, null, false, null, isHalcyon);
-                                
-                            if (UseDivergenceCorrection)
-                            {
-                                lateralBeam = Campos.TgExtEComCorrecaoDivergencia(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, 
-                                    SelectedPTV, medialBeam, isHalcyon);
+                                    true, SelectedContralateralBreast, isHalcyon);
                             }
                             else
                             {
-                                lateralBeam = Campos.TgExtE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                    false, null, false, null, isHalcyon);
+                                medialBeam = Campos.TgIntD(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    false, null, isHalcyon);
+                                    
+                                if (UseDivergenceCorrection)
+                                {
+                                    lateralBeam = Campos.TgExtDComCorrecaoDivergencia(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, 
+                                        SelectedPTV, medialBeam, isHalcyon);
+                                }
+                                else
+                                {
+                                    lateralBeam = Campos.TgExtD(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                        false, null, isHalcyon);
+                                }
                             }
                         }
-                    }
-                    
-                    // Generate Beam's Eye View
-                    MedialBeamEyeView = CreateBeamEyeView(medialBeam, SelectedPTV, SelectedLung, SelectedContralateralBreast, 
-                        SelectedHeart, SelectedHeart != null, "Medial Tangent", HasContralateralBreast);
+                        else // "Esquerda"
+                        {
+                            if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast)
+                            {
+                                medialBeam = Campos.TgIntE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    true, SelectedContralateralBreast, false, null, isHalcyon);
+                                    
+                                lateralBeam = Campos.TgExtE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    true, SelectedContralateralBreast, false, null, isHalcyon);
+                            }
+                            else if (SelectedOptimizationTarget == OptimizationTarget.Heart && SelectedHeart != null)
+                            {
+                                medialBeam = Campos.TgIntE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    false, null, true, SelectedHeart, isHalcyon);
+                                    
+                                lateralBeam = Campos.TgExtE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    false, null, true, SelectedHeart, isHalcyon);
+                            }
+                            else
+                            {
+                                medialBeam = Campos.TgIntE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    false, null, false, null, isHalcyon);
+                                
+                                if (UseDivergenceCorrection)
+                                {
+                                    lateralBeam = Campos.TgExtEComCorrecaoDivergencia(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, 
+                                        SelectedPTV, medialBeam, isHalcyon);
+                                }
+                                else
+                                {
+                                    lateralBeam = Campos.TgExtE(tempPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                        false, null, false, null, isHalcyon);
+                                }
+                            }
+                        }
                         
-                    LateralBeamEyeView = CreateBeamEyeView(lateralBeam, SelectedPTV, SelectedLung, SelectedContralateralBreast, 
-                        SelectedHeart, SelectedHeart != null, "Lateral Tangent", HasContralateralBreast);
-                    
-                    // Remove temporary plan and beams
-                    _context.Course.RemovePlanSetup(tempPlan);
-                    
-                    IsBeamEyeViewVisible = true;
-                    StatusMessage = "Beam's eye view generated successfully.";
-                }
-                catch (Exception ex)
-                {
-                    // Cleanup in case of error
-                    if (tempPlan != null)
-                    {
-                        try { _context.Course.RemovePlanSetup(tempPlan); } catch { }
+                        // Generate Beam's Eye View
+                        MedialBeamEyeView = CreateBeamEyeView(medialBeam, SelectedPTV, SelectedLung, SelectedContralateralBreast, 
+                            SelectedHeart, SelectedHeart != null, "Medial Tangent", HasContralateralBreast);
+                            
+                        LateralBeamEyeView = CreateBeamEyeView(lateralBeam, SelectedPTV, SelectedLung, SelectedContralateralBreast, 
+                            SelectedHeart, SelectedHeart != null, "Lateral Tangent", HasContralateralBreast);
+                        
+                        // Remove temporary plan and beams
+                        context.Course.RemovePlanSetup(tempPlan);
+                        
+                        IsBeamEyeViewVisible = true;
+                        StatusMessage = "Beam's eye view generated successfully.";
                     }
-                    StatusMessage = $"Error generating beam's eye view: {ex.Message}";
-                    StatusIsError = true;
-                }
+                    catch (Exception ex)
+                    {
+                        // Cleanup in case of error
+                        if (tempPlan != null)
+                        {
+                            try { context.Course.RemovePlanSetup(tempPlan); } catch { }
+                        }
+                        StatusMessage = $"Error generating beam's eye view: {ex.Message}";
+                        StatusIsError = true;
+                    }
+                    });
             }
             catch (Exception ex)
             {
@@ -560,224 +580,227 @@ namespace MAAS_BreastPlan_helper.ViewModels
             {
                 StatusMessage = "Creating tangent fields...";
                 
-                if (_context?.Patient == null || _context.StructureSet == null)
+                _esapiWorker.Run(context =>
                 {
-                    StatusMessage = "Please load a patient and structure set first.";
-                    return;
-                }
-
-                var currentPlan = _context.PlanSetup as ExternalPlanSetup;
-                if (currentPlan == null)
-                {
-                    StatusMessage = "Please load a treatment plan.";
-                    return;
-                }
-                
-                // Validate required structures are selected
-                if (SelectedBody == null)
-                {
-                    StatusMessage = "Please select a body structure.";
-                    return;
-                }
-                
-                if (SelectedPTV == null)
-                {
-                    StatusMessage = "Please select a PTV structure.";
-                    return;
-                }
-                
-                if (SelectedLung == null)
-                {
-                    StatusMessage = "Please select an ipsilateral lung structure.";
-                    return;
-                }
-
-                // Begin modifications to create a new plan
-                _context.Patient.BeginModifications();
-                
-                // Create a new plan with name based on original plan
-                string originalPlanId = currentPlan.Id;
-                string baseId;
-                
-                // Plan IDs without revision number have a maximum length of 13 characters
-                // We need to ensure we have room for the "_#" suffix (at least 2 characters)
-                const int maxPlanIdLength = 13;
-                const int suffixSpaceNeeded = 2; // For "_1", "_2", etc.
-                
-                // If the original ID is too long, truncate it
-                if (originalPlanId.Length > maxPlanIdLength - suffixSpaceNeeded)
-                {
-                    baseId = originalPlanId.Substring(0, maxPlanIdLength - suffixSpaceNeeded);
-                }
-                else
-                {
-                    baseId = originalPlanId;
-                }
-                
-                string newPlanId = baseId;
-                int counter = 1;
-                
-                // Make sure plan ID is unique by adding a counter suffix
-                while (_context.Course.ExternalPlanSetups.Any(p => p.Id == newPlanId))
-                {
-                    newPlanId = $"{baseId}_{counter}";
-                    
-                    // If adding the counter made the ID too long, truncate the base ID further
-                    if (newPlanId.Length > maxPlanIdLength)
+                    if (context?.Patient == null || context.StructureSet == null)
                     {
-                        // Recalculate how much space we need for the suffix (could be "_10", "_11", etc.)
-                        int counterDigits = counter.ToString().Length;
-                        int spaceNeeded = counterDigits + 1; // +1 for the underscore
-                        baseId = originalPlanId.Substring(0, maxPlanIdLength - spaceNeeded);
+                        StatusMessage = "Please load a patient and structure set first.";
+                        return;
+                    }
+
+                    var currentPlan = context.PlanSetup as ExternalPlanSetup;
+                    if (currentPlan == null)
+                    {
+                        StatusMessage = "Please load a treatment plan.";
+                        return;
+                    }
+                    
+                    // Validate required structures are selected
+                    if (SelectedBody == null)
+                    {
+                        StatusMessage = "Please select a body structure.";
+                        return;
+                    }
+                    
+                    if (SelectedPTV == null)
+                    {
+                        StatusMessage = "Please select a PTV structure.";
+                        return;
+                    }
+                    
+                    if (SelectedLung == null)
+                    {
+                        StatusMessage = "Please select an ipsilateral lung structure.";
+                        return;
+                    }
+
+                    // Begin modifications to create a new plan
+                    context.Patient.BeginModifications();
+                    
+                    // Create a new plan with name based on original plan
+                    string originalPlanId = currentPlan.Id;
+                    string baseId;
+                    
+                    // Plan IDs without revision number have a maximum length of 13 characters
+                    // We need to ensure we have room for the "_#" suffix (at least 2 characters)
+                    const int maxPlanIdLength = 13;
+                    const int suffixSpaceNeeded = 2; // For "_1", "_2", etc.
+                    
+                    // If the original ID is too long, truncate it
+                    if (originalPlanId.Length > maxPlanIdLength - suffixSpaceNeeded)
+                    {
+                        baseId = originalPlanId.Substring(0, maxPlanIdLength - suffixSpaceNeeded);
+                    }
+                    else
+                    {
+                        baseId = originalPlanId;
+                    }
+                    
+                    string newPlanId = baseId;
+                    int counter = 1;
+                    
+                    // Make sure plan ID is unique by adding a counter suffix
+                    while (context.Course.ExternalPlanSetups.Any(p => p.Id == newPlanId))
+                    {
                         newPlanId = $"{baseId}_{counter}";
-                    }
-                    
-                    counter++;
-                }
-                
-                // Create the new plan
-                ExternalPlanSetup newPlan = _context.Course.AddExternalPlanSetup(_context.StructureSet);
-                newPlan.Id = newPlanId;
-
-                // Copy some basic properties from the current plan
-                try
-                {
-                    // Try to copy machine, energy settings from current plan
-                    // Use null-coalescing operator to handle nullable types
-                    int fractions = currentPlan.NumberOfFractions ?? 1;  // Default to 1 fraction if null
-                    newPlan.SetPrescription(fractions, currentPlan.DosePerFraction, 100.0);
-                }
-                catch (Exception ex)
-                {
-                    StatusMessage = $"Note: Could not copy prescription settings: {ex.Message}";
-                    StatusIsError = true;
-                }
-
-                // Get energy mode and machine parameters from current plan
-                var firstBeam = currentPlan.Beams.FirstOrDefault();
-                string energyModeId = "6X";
-                int doseRate = 600;
-                string machineId = "TrueBeam";
-                
-                if (firstBeam != null)
-                {
-                    energyModeId = firstBeam.EnergyModeDisplayName;
-                    doseRate = firstBeam.DoseRate;
-                    machineId = firstBeam.TreatmentUnit.Id;
-                }
-                
-                var ebmp = new ExternalBeamMachineParameters(
-                    machineId,
-                    energyModeId,
-                    doseRate,
-                    "STATIC",
-                    null
-                );
-                
-                // Calculate isocenter based on PTV
-                VVector isocenter = new VVector(
-                    Math.Round(SelectedPTV.CenterPoint.x / 10.0f) * 10.0f,
-                    Math.Round(SelectedPTV.CenterPoint.y / 10.0f) * 10.0f,
-                    Math.Round(SelectedPTV.CenterPoint.z / 10.0f) * 10.0f
-                );
-                
-                // Create default leaf positions
-                int leafCount = 60; // Default for Millennium MLC
-                float[,] leafPositions = new float[2, leafCount];
-                for (int i = 0; i < leafCount; i++)
-                {
-                    leafPositions[0, i] = -100.0f;
-                    leafPositions[1, i] = 100.0f;
-                }
-                
-                // Check if machine is Halcyon
-                bool isHalcyon = machineId.ToUpper().Contains("HALCYON");
-                
-                // Create beams based on laterality, optimization target, and divergence correction
-                if (DetectedLaterality == "Direita")
-                {
-                    Beam tgInt;
-                    Beam tgExt;
-                    
-                    if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast && SelectedContralateralBreast != null)
-                    {
-                        tgInt = Campos.TgIntD(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            true, SelectedContralateralBreast, isHalcyon);
-                            
-                        tgExt = Campos.TgExtD(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            true, SelectedContralateralBreast, isHalcyon);
-                    }
-                    else
-                    {
-                        tgInt = Campos.TgIntD(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            false, null, isHalcyon);
-                            
-                        if (UseDivergenceCorrection)
+                        
+                        // If adding the counter made the ID too long, truncate the base ID further
+                        if (newPlanId.Length > maxPlanIdLength)
                         {
-                            tgExt = Campos.TgExtDComCorrecaoDivergencia(newPlan, ebmp, leafPositions, isocenter, SelectedBody, 
-                                SelectedPTV, tgInt, isHalcyon);
+                            // Recalculate how much space we need for the suffix (could be "_10", "_11", etc.)
+                            int counterDigits = counter.ToString().Length;
+                            int spaceNeeded = counterDigits + 1; // +1 for the underscore
+                            baseId = originalPlanId.Substring(0, maxPlanIdLength - spaceNeeded);
+                            newPlanId = $"{baseId}_{counter}";
                         }
-                        else
+                        
+                        counter++;
+                    }
+                    
+                    // Create the new plan
+                    ExternalPlanSetup newPlan = context.Course.AddExternalPlanSetup(context.StructureSet);
+                    newPlan.Id = newPlanId;
+
+                    // Copy some basic properties from the current plan
+                    try
+                    {
+                        // Try to copy machine, energy settings from current plan
+                        // Use null-coalescing operator to handle nullable types
+                        int fractions = currentPlan.NumberOfFractions ?? 1;  // Default to 1 fraction if null
+                        newPlan.SetPrescription(fractions, currentPlan.DosePerFraction, 100.0);
+                    }
+                    catch (Exception ex)
+                    {
+                        StatusMessage = $"Note: Could not copy prescription settings: {ex.Message}";
+                        StatusIsError = true;
+                    }
+
+                    // Get energy mode and machine parameters from current plan
+                    var firstBeam = currentPlan.Beams.FirstOrDefault();
+                    string energyModeId = "6X";
+                    int doseRate = 600;
+                    string machineId = "TrueBeam";
+                    
+                    if (firstBeam != null)
+                    {
+                        energyModeId = firstBeam.EnergyModeDisplayName;
+                        doseRate = firstBeam.DoseRate;
+                        machineId = firstBeam.TreatmentUnit.Id;
+                    }
+                    
+                    var ebmp = new ExternalBeamMachineParameters(
+                        machineId,
+                        energyModeId,
+                        doseRate,
+                        "STATIC",
+                        null
+                    );
+                    
+                    // Calculate isocenter based on PTV
+                    VVector isocenter = new VVector(
+                        Math.Round(SelectedPTV.CenterPoint.x / 10.0f) * 10.0f,
+                        Math.Round(SelectedPTV.CenterPoint.y / 10.0f) * 10.0f,
+                        Math.Round(SelectedPTV.CenterPoint.z / 10.0f) * 10.0f
+                    );
+                    
+                    // Create default leaf positions
+                    int leafCount = 60; // Default for Millennium MLC
+                    float[,] leafPositions = new float[2, leafCount];
+                    for (int i = 0; i < leafCount; i++)
+                    {
+                        leafPositions[0, i] = -100.0f;
+                        leafPositions[1, i] = 100.0f;
+                    }
+                    
+                    // Check if machine is Halcyon
+                    bool isHalcyon = machineId.ToUpper().Contains("HALCYON");
+                    
+                    // Create beams based on laterality, optimization target, and divergence correction
+                    if (DetectedLaterality == "Direita")
+                    {
+                        Beam tgInt;
+                        Beam tgExt;
+                        
+                        if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast && SelectedContralateralBreast != null)
                         {
+                            tgInt = Campos.TgIntD(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                true, SelectedContralateralBreast, isHalcyon);
+                                
                             tgExt = Campos.TgExtD(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                false, null, isHalcyon);
-                        }
-                    }
-                    
-                    // Set beam names
-                    tgInt.Id = "Med";
-                    tgExt.Id = "Lat";
-                }
-                else // "Esquerda"
-                {
-                    Beam tgInt;
-                    Beam tgExt;
-                    
-                    if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast && SelectedContralateralBreast != null)
-                    {
-                        tgInt = Campos.TgIntE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            true, SelectedContralateralBreast, false, null, isHalcyon);
-                            
-                        tgExt = Campos.TgExtE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            true, SelectedContralateralBreast, false, null, isHalcyon);
-                    }
-                    else if (SelectedOptimizationTarget == OptimizationTarget.Heart && SelectedHeart != null)
-                    {
-                        tgInt = Campos.TgIntE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            false, null, true, SelectedHeart, isHalcyon);
-                            
-                        tgExt = Campos.TgExtE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            false, null, true, SelectedHeart, isHalcyon);
-                    }
-                    else
-                    {
-                        tgInt = Campos.TgIntE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                            false, null, false, null, isHalcyon);
-                            
-                        if (UseDivergenceCorrection)
-                        {
-                            tgExt = Campos.TgExtEComCorrecaoDivergencia(newPlan, ebmp, leafPositions, isocenter, SelectedBody, 
-                                SelectedPTV, tgInt, isHalcyon);
+                                true, SelectedContralateralBreast, isHalcyon);
                         }
                         else
                         {
-                            tgExt = Campos.TgExtE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
-                                false, null, false, null, isHalcyon);
+                            tgInt = Campos.TgIntD(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                false, null, isHalcyon);
+                                
+                            if (UseDivergenceCorrection)
+                            {
+                                tgExt = Campos.TgExtDComCorrecaoDivergencia(newPlan, ebmp, leafPositions, isocenter, SelectedBody, 
+                                    SelectedPTV, tgInt, isHalcyon);
+                            }
+                            else
+                            {
+                                tgExt = Campos.TgExtD(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    false, null, isHalcyon);
+                            }
                         }
+                        
+                        // Set beam names
+                        tgInt.Id = "Med";
+                        tgExt.Id = "Lat";
+                    }
+                    else // "Esquerda"
+                    {
+                        Beam tgInt;
+                        Beam tgExt;
+                        
+                        if (SelectedOptimizationTarget == OptimizationTarget.ContralateralBreast && HasContralateralBreast && SelectedContralateralBreast != null)
+                        {
+                            tgInt = Campos.TgIntE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                true, SelectedContralateralBreast, false, null, isHalcyon);
+                                
+                            tgExt = Campos.TgExtE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                true, SelectedContralateralBreast, false, null, isHalcyon);
+                        }
+                        else if (SelectedOptimizationTarget == OptimizationTarget.Heart && SelectedHeart != null)
+                        {
+                            tgInt = Campos.TgIntE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                false, null, true, SelectedHeart, isHalcyon);
+                                
+                            tgExt = Campos.TgExtE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                false, null, true, SelectedHeart, isHalcyon);
+                        }
+                        else
+                        {
+                            tgInt = Campos.TgIntE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                false, null, false, null, isHalcyon);
+                                
+                            if (UseDivergenceCorrection)
+                            {
+                                tgExt = Campos.TgExtEComCorrecaoDivergencia(newPlan, ebmp, leafPositions, isocenter, SelectedBody, 
+                                    SelectedPTV, tgInt, isHalcyon);
+                            }
+                            else
+                            {
+                                tgExt = Campos.TgExtE(newPlan, ebmp, leafPositions, isocenter, SelectedBody, SelectedPTV, SelectedLung, 
+                                    false, null, false, null, isHalcyon);
+                            }
+                        }
+                        
+                        // Set beam names
+                        tgInt.Id = "Med";
+                        tgExt.Id = "Lat";
                     }
                     
-                    // Set beam names
-                    tgInt.Id = "Med";
-                    tgExt.Id = "Lat";
-                }
-                
-                StatusMessage = $"Tangent fields created successfully in new plan '{newPlan.Id}'.";
-                
-                // Show message box with success message
-                MessageBox.Show($"Tangent fields have been created successfully in the new plan '{newPlan.Id}'.", 
-                                "Tangent Placement Complete", 
-                                MessageBoxButton.OK, 
-                                MessageBoxImage.Information);
+                    StatusMessage = $"Tangent fields created successfully in new plan '{newPlan.Id}'.";
+                    
+                    // Show message box with success message
+                    MessageBox.Show($"Tangent fields have been created successfully in the new plan '{newPlan.Id}'.", 
+                                    "Tangent Placement Complete", 
+                                    MessageBoxButton.OK, 
+                                    MessageBoxImage.Information);
+                });
             }
             catch (Exception ex)
             {

@@ -14,33 +14,34 @@ using Prism.Mvvm;
 using Prism.Commands;
 using System.Windows.Input;
 using MAAS_BreastPlan_helper.Models;
+using MAAS_BreastPlan_helper.Services;
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
     public class BreastFiFViewModel : BindableBase
     {
-        private readonly ScriptContext _context;
+        private readonly EsapiWorker _esapiWorker;
         private readonly SettingsClass _settings;
 
         public DelegateCommand ExecuteCommand { get; private set; }
         
-        private string statusMessage;
+        private string _statusMessage;
         public string StatusMessage
         {
-            get { return statusMessage; }
-            set { SetProperty(ref statusMessage, value); }
+            get { return _statusMessage; }
+            set { SetProperty(ref _statusMessage, value); }
         }
         
-        private int selectedSubFieldCount = 2; // Default to 5 subfields (index 2 = 5 subfields)
+        private int _selectedSubFieldCount = 2; // Default to 5 subfields (index 2 = 5 subfields)
         public int SelectedSubFieldCount
         {
-            get { return selectedSubFieldCount; }
-            set { SetProperty(ref selectedSubFieldCount, value); }
+            get { return _selectedSubFieldCount; }
+            set { SetProperty(ref _selectedSubFieldCount, value); }
         }
 
-        public BreastFiFViewModel(ScriptContext context, SettingsClass settings)
+        public BreastFiFViewModel(EsapiWorker esapiWorker, SettingsClass settings)
         {
-            _context = context;
+            _esapiWorker = esapiWorker;
             _settings = settings;
             
             ExecuteCommand = new DelegateCommand(Execute, CanExecute);
@@ -49,7 +50,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         private bool CanExecute()
         {
-            return _context?.PlanSetup != null;
+            return _esapiWorker.GetValue(sc => sc.PlanSetup) != null;
         }
 
         private void Execute()
@@ -57,13 +58,22 @@ namespace MAAS_BreastPlan_helper.ViewModels
             try
             {
                 StatusMessage = "Executing BreastFiF...";
-                ExecuteBreastFiF(_context);
+                
+                _esapiWorker.ExecuteWithErrorHandling(sc =>
+                {
+                    ExecuteBreastFiF(sc);
                 StatusMessage = "BreastFiF completed successfully.";
+                },
+                ex =>
+                {
+                    StatusMessage = $"Error: {ex.Message}";
+                    System.Windows.MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                });
             }
             catch (Exception ex)
             {
                 StatusMessage = $"Error: {ex.Message}";
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

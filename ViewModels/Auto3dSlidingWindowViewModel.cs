@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using VMS.TPS.Common.Model.API;
 using MAAS_BreastPlan_helper.Models;
+using MAAS_BreastPlan_helper.Services;
 using VMS.TPS.Common.Model.Types;
 using System.Collections.ObjectModel;
 using Prism.Commands;
@@ -70,89 +71,80 @@ namespace MAAS_BreastPlan_helper.ViewModels
     public class Auto3dSlidingWindowViewModel : BindableBase
     {
         #region class members
-        private ScriptContext Context { get; set; }
-        private SettingsClass Settings { get; set; }
+        private readonly EsapiWorker _esapiWorker;
+        private readonly SettingsClass _settings;
         private Patient Patient { get; set; }
-        //private ExternalPlanSetup Plan { get; set; }
-        private ExternalPlanSetup plan;
-
-        private double sepIso;
-
-        public double SepIso
-        {
-            get { return sepIso; }
-            set { SetProperty(ref sepIso, value); }
-        }
-
-        private double sepIsoEdge;
-
-        public double SepIsoEdge
-        {
-            get { return sepIsoEdge; }
-            set { SetProperty(ref sepIsoEdge, value); }
-        }
-
-        private double sepDmaxEdgeAfterOpt;
-
-        public double SepDmaxEdgeAfterOpt
-        {
-            get { return sepDmaxEdgeAfterOpt; }
-            set { SetProperty(ref sepDmaxEdgeAfterOpt, value); }
-        }
-
-        private bool customPTV;
-
-        public bool CustomPTV
-        {
-            get { return customPTV; }
-            set { SetProperty(ref customPTV, value); }
-        }
-
-        private bool cboPTVEnabled;
-
-        public bool CBOPTVEnabled
-        {
-            get { return cboPTVEnabled; }
-            set { SetProperty(ref cboPTVEnabled, value); }
-        }
-
-        private bool lblPTVEnabled;
-
-        public bool LBLPTVEnabled
-        {
-            get { return lblPTVEnabled; }
-            set { SetProperty(ref lblPTVEnabled, value); }
-        }
-
-
+        
+        private ExternalPlanSetup _plan;
         public ExternalPlanSetup Plan
         {
-            get { return plan; }
-            set { SetProperty(ref plan, value); }
+            get { return _plan; }
+            set { SetProperty(ref _plan, value); }
         }
 
-        private string selectedEnergy;
+        private double _sepIso;
+        public double SepIso
+        {
+            get { return _sepIso; }
+            set { SetProperty(ref _sepIso, value); }
+        }
+
+        private double _sepIsoEdge;
+        public double SepIsoEdge
+        {
+            get { return _sepIsoEdge; }
+            set { SetProperty(ref _sepIsoEdge, value); }
+        }
+
+        private double _sepDmaxEdgeAfterOpt;
+        public double SepDmaxEdgeAfterOpt
+        {
+            get { return _sepDmaxEdgeAfterOpt; }
+            set { SetProperty(ref _sepDmaxEdgeAfterOpt, value); }
+        }
+
+        private bool _customPTV;
+        public bool CustomPTV
+        {
+            get { return _customPTV; }
+            set { SetProperty(ref _customPTV, value); }
+        }
+
+        private bool _cboPTVEnabled;
+        public bool CBOPTVEnabled
+        {
+            get { return _cboPTVEnabled; }
+            set { SetProperty(ref _cboPTVEnabled, value); }
+        }
+
+        private bool _lblPTVEnabled;
+        public bool LBLPTVEnabled
+        {
+            get { return _lblPTVEnabled; }
+            set { SetProperty(ref _lblPTVEnabled, value); }
+        }
+
+        private string _selectedEnergy;
         public string SelectedEnergy
         {
-            get { return selectedEnergy; }
-            set { SetProperty(ref selectedEnergy, value); }
+            get { return _selectedEnergy; }
+            set { SetProperty(ref _selectedEnergy, value); }
         }
 
 
         public ObservableCollection<SIDE> BreastSides { get; set; }
-        private SIDE selectedBreastSide;
-
+        private SIDE _selectedBreastSide;
         public SIDE SelectedBreastSide
         {
-            get { return selectedBreastSide; }
-            set { SetProperty(ref selectedBreastSide, value); }
+            get { return _selectedBreastSide; }
+            set { SetProperty(ref _selectedBreastSide, value); }
         }
 
         private string _maxDoseGoal;
         public string MaxDoseGoal
         {
-            get => _maxDoseGoal;
-            set => SetProperty(ref _maxDoseGoal, value);
+            get { return _maxDoseGoal; }
+            set { SetProperty(ref _maxDoseGoal, value); }
         }
 
 
@@ -161,52 +153,47 @@ namespace MAAS_BreastPlan_helper.ViewModels
         public DelegateCommand CreatePlanCMD { get; set; }
 
         // -- Lung stuff --
-        private Structure ipsi_lung;
-
+        private Structure _ipsiLung;
         public Structure Ipsi_lung
         {
-            get { return ipsi_lung; }
-            set { SetProperty(ref ipsi_lung, value); }
+            get { return _ipsiLung; }
+            set { SetProperty(ref _ipsiLung, value); }
         }
 
         public ObservableCollection<Structure> PTVItems { get; set; }
-        private Structure selectedPTV;
-
+        private Structure _selectedPTV;
         public Structure SelectedPTV
         {
-            get { return selectedPTV; }
-            set { SetProperty(ref selectedPTV, value); }
+            get { return _selectedPTV; }
+            set { SetProperty(ref _selectedPTV, value); }
         }
 
 
         public ObservableCollection<Structure> LungStructures { get; set; }
 
-        private string lmcModel;
-
+        private string _lmcModel;
         public string LMCModel
         {
-            get { return lmcModel; }
-            set { SetProperty(ref lmcModel, value); }
+            get { return _lmcModel; }
+            set { SetProperty(ref _lmcModel, value); }
         }
 
-        private string lmcVersion;
-
+        private string _lmcVersion;
         public string LMCVersion
         {
-            get { return lmcVersion; }
-            set { SetProperty(ref lmcVersion, value); }
+            get { return _lmcVersion; }
+            set { SetProperty(ref _lmcVersion, value); }
         }
 
         public DelegateCommand CbCustomPTV_Click { get; set; }
 
 
         // -- Heart stuff --
-        private Structure heart;
-
+        private Structure _heart;
         public Structure Heart
         {
-            get { return heart; }
-            set { SetProperty(ref heart, value); }
+            get { return _heart; }
+            set { SetProperty(ref _heart, value); }
         }
 
         public ObservableCollection<Structure> HeartStructures { get; set; }
@@ -221,7 +208,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private void Precheck()
         {
 
-            Patient = Context.Patient;
+            Patient = _esapiWorker.GetValue(context => context.Patient);
             Patient.BeginModifications();
             // Runs before optimization to ensure the setup is correct and warn if not
             var bPrecheckPass = true;
@@ -235,14 +222,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 message += "Error: Patient is null\n";
             }
 
-            Plan = Context.PlanSetup as ExternalPlanSetup;
+            Plan = _esapiWorker.GetValue(context => context.PlanSetup as ExternalPlanSetup);
             if (Plan == null)
             {
                 bPrecheckPass = false;
                 message += "Error: Plan is null\n";
             }
 
-            Log.Debug($"Starting autoplan. Debug = {Settings.Debug}");
+            Log.Debug($"Starting autoplan. Debug = {_settings.Debug}");
             Log.Debug("Checking two-field plan parameters");
 
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
@@ -325,14 +312,18 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 Log.Debug("Dose calc on initial plan successful");
             }
 
-            //if (Settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
+            //if (_settings.Debug) { await UpdateListBox("All checks passed, copying to new plan"); }
             Log.Debug("All checks passed, copying to new plan");
         }
-        public Auto3dSlidingWindowViewModel(ScriptContext context, SettingsClass settings, string json_path)
+        public Auto3dSlidingWindowViewModel(EsapiWorker esapiWorker, SettingsClass settings, string json_path)
         {
-            Context = context;
-            Settings = settings;
+            _esapiWorker = esapiWorker;
+            _settings = settings;
             JsonPath = json_path;
+            
+            // Initialize Plan from EsapiWorker
+            Plan = _esapiWorker.GetValue(sc => sc.ExternalPlanSetup);
+            
             Precheck();
 
             var json_dir = Path.GetDirectoryName(json_path);
@@ -354,63 +345,66 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             StatusBoxItems = new ObservableCollection<string>();
 
-            // Initialize observable collections        
-            var ss = Plan.StructureSet;
-            if (ss == null) { throw new Exception("Structure set is null"); }
-            var structs = plan.StructureSet.Structures;
-            if (structs == null) { throw new Exception("Structures are null"); }
-            var lHeartStructures = structs.Where(s => s.Id.ToLower().Contains("heart")).ToList();
-            if (lHeartStructures.Count == 0) { throw new Exception("Heart structures are empty"); }
-
-            HeartStructures = new ObservableCollection<Structure>();
-            foreach (var structure in lHeartStructures) { HeartStructures.Add(structure); }
-            Heart = HeartStructures.FirstOrDefault();
-
-            BreastSides = new ObservableCollection<SIDE>() { SIDE.RIGHT, SIDE.LEFT };
-            SelectedBreastSide = FindTreatmentSide(Plan); ;
-
-            var lLungStructures = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("lung")).ToList();
-            LungStructures = new ObservableCollection<Structure>();
-            foreach (var strucuture in lLungStructures) { LungStructures.Add(strucuture); }
-
-            // Select lung structure based on the position of the center point
-            if (selectedBreastSide == SIDE.LEFT)
+            // Initialize observable collections using EsapiWorker to ensure fresh structure references
+            _esapiWorker.RunWithWait(sc =>
             {
-                Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x > 0).FirstOrDefault();
-            }
-            else
-            {
-                Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
-            }
+                var ss = sc.StructureSet;
+                if (ss == null) { throw new Exception("Structure set is null"); }
+                var structs = ss.Structures;
+                if (structs == null) { throw new Exception("Structures are null"); }
+                var lHeartStructures = structs.Where(s => s.Id.ToLower().Contains("heart")).ToList();
+                if (lHeartStructures.Count == 0) { throw new Exception("Heart structures are empty"); }
 
-            MaxDoseGoal = settings.MaxDoseGoal.ToString();
+                HeartStructures = new ObservableCollection<Structure>();
+                foreach (var structure in lHeartStructures) { HeartStructures.Add(structure); }
+                Heart = HeartStructures.FirstOrDefault();
 
-            SelectedEnergy = Utils.GetFluenceEnergyMode(Plan.Beams.Where(b => !b.IsSetupField).First()).Item2;
+                BreastSides = new ObservableCollection<SIDE>() { SIDE.RIGHT, SIDE.LEFT };
+                SelectedBreastSide = FindTreatmentSide(sc.ExternalPlanSetup);
 
-            var LMCSplit = splitLMC(settings.LMCModel);
-            LMCModel = LMCSplit.Item1;
-            LMCVersion = LMCSplit.Item2;
+                var lLungStructures = ss.Structures.Where(s => s.Id.ToLower().Contains("lung")).ToList();
+                LungStructures = new ObservableCollection<Structure>();
+                foreach (var structure in lLungStructures) { LungStructures.Add(structure); }
 
-            PTVItems = new ObservableCollection<Structure>();
-            foreach (var s in Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("ptv")))
-            {
-                PTVItems.Add(s);
-            }
+                // Select lung structure based on the position of the center point
+                if (SelectedBreastSide == SIDE.LEFT)
+                {
+                    Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x > 0).FirstOrDefault();
+                }
+                else
+                {
+                    Ipsi_lung = LungStructures.Where(s => s.CenterPoint.x <= 0).FirstOrDefault();
+                }
 
-            // Initialize Custom ptv chekbox to false
-            CustomPTV = false;
-            LBLPTVEnabled = false;
-            CBOPTVEnabled = false;
+                MaxDoseGoal = _settings.MaxDoseGoal.ToString();
+
+                SelectedEnergy = Utils.GetFluenceEnergyMode(sc.ExternalPlanSetup.Beams.Where(b => !b.IsSetupField).First()).Item2;
+
+                var LMCSplit = splitLMC(_settings.LMCModel);
+                LMCModel = LMCSplit.Item1;
+                LMCVersion = LMCSplit.Item2;
+
+                PTVItems = new ObservableCollection<Structure>();
+                foreach (var s in ss.Structures.Where(s => s.Id.ToLower().Contains("ptv")))
+                {
+                    PTVItems.Add(s);
+                }
+
+                // Initialize Custom ptv checkbox to false
+                CustomPTV = false;
+                LBLPTVEnabled = false;
+                CBOPTVEnabled = false;
+
+                var body = ss.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
+
+                SepIso = Utils.ComputeBeamSeparation(sc.ExternalPlanSetup.Beams.First(), sc.ExternalPlanSetup.Beams.Last(), body); // center of field iso plane
+                SepIsoEdge = Utils.ComputeBeamSeparationWholeField(sc.ExternalPlanSetup.Beams.First(), sc.ExternalPlanSetup.Beams.Last(), body, SelectedBreastSide); // field edge iso plane
+
+                // Initialize max dose goal
+                MaxDoseGoal = "107";
+            });
 
             CbCustomPTV_Click = new DelegateCommand(OnCustomPTV_Click);
-
-            var body = Plan.StructureSet.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
-
-            SepIso = Utils.ComputeBeamSeparation(Plan.Beams.First(), Plan.Beams.Last(), body); // center of field iso plane
-            SepIsoEdge = Utils.ComputeBeamSeparationWholeField(Plan.Beams.First(), Plan.Beams.Last(), body, selectedBreastSide); // field edge iso plane
-
-            // Initialize max dose goal
-            MaxDoseGoal = "107";
             
             // Add initial status message
             AddStatusMessage("Auto 3D Sliding Window ready.");
@@ -443,7 +437,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         private void OnCustomPTV_Click()
         {
-            if (customPTV)
+            if (CustomPTV)
             {
                 CBOPTVEnabled = true;
                 LBLPTVEnabled = true;
@@ -460,42 +454,43 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public async void OnCreateBreastPlanAsync()
         {
-            // Save some properties back to config
-            // LMC
+            await _esapiWorker.ExecuteWithErrorHandlingAsync(async sc =>
+            {
+                // Save some properties back to config
+                _settings.LMCModel = joinLMC(LMCModel, LMCVersion);
+                File.WriteAllText(JsonPath, JsonConvert.SerializeObject(_settings));
 
-            Settings.LMCModel = joinLMC(LMCModel, LMCVersion);
+                // Create a completely isolated copy of the plan to work with
+                // This ensures we don't interfere with the original plan context used by other tabs
+                var originalPlan = sc.ExternalPlanSetup;
+                var NewPlan = sc.Course.CopyPlanSetup(originalPlan) as ExternalPlanSetup;
+                NewPlan.Id = Utils.GetNewPlanName(sc.Course, originalPlan.Id, 13);
 
-            File.WriteAllText(JsonPath, JsonConvert.SerializeObject(Settings));
+            NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, originalPlan.PhotonCalculationModel);
+            NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, originalPlan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
 
-            // Copy plan and set new name
-            var NewPlan = Context.Course.CopyPlanSetup(Plan) as ExternalPlanSetup;
-            NewPlan.Id = Utils.GetNewPlanName(Context.Course, Plan.Id, 13);
+                if (_settings.Debug) { await UpdateListBox($"New plan created with id {NewPlan.Id}"); }
+                Log.Debug($"New plan created with id {NewPlan.Id}");
 
-            NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
-            NewPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, Plan.GetCalculationModel(CalculationType.PhotonIMRTOptimization));
+                // Check if there is a PTV
+                var CopiedSS = NewPlan.StructureSet;
+                var body = CopiedSS.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
 
-            if (Settings.Debug) { await UpdateListBox($"New plan created with id {NewPlan.Id}"); }
-            Log.Debug($"New plan created with id {NewPlan.Id}");
+                // Perform dose calc
+                NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, originalPlan.PhotonCalculationModel);
+                NewPlan.CalculateDose();
 
-            // Check if there is a PTV
-            var CopiedSS = NewPlan.StructureSet;
-            var body = CopiedSS.Structures.Where(s => s.Id.ToLower().Contains("body")).First();
+                NewPlan.SetPrescription((int)originalPlan.NumberOfFractions, originalPlan.DosePerFraction, originalPlan.TreatmentPercentage);
+                //REM: NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
 
-            // Perform dose calc
-            NewPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, Plan.PhotonCalculationModel);
-            NewPlan.CalculateDose();
-
-            NewPlan.SetPrescription((int)Plan.NumberOfFractions, Plan.DosePerFraction, Plan.TreatmentPercentage);
-            //REM: NewPlan.SetPrescription(25, new DoseValue(2, DoseUnit.Gy), 1);
-
-            if (Settings.Debug) { await UpdateListBox($"Set dose normalization to global max"); }
+                if (_settings.Debug) { await UpdateListBox($"Set dose normalization to global max"); }
             Log.Debug($"Set dose normalization to global max");
 
-            var maxBodyDose = Plan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
+            var maxBodyDose = originalPlan.GetDVHCumulativeData(body, DoseValuePresentation.Relative, VolumePresentation.Relative, 1).MaxDose;
             NewPlan.PlanNormalizationValue = maxBodyDose.Dose;
 
             //var DM3D = NewPlan.Dose.DoseMax3D;
-            if (Settings.Debug) { await UpdateListBox($"Dose calculation finished"); }
+                if (_settings.Debug) { await UpdateListBox($"Dose calculation finished"); }
             Log.Debug("Dose calculation finished");
 
             // Delete existing opt structures
@@ -511,16 +506,22 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 PTV_OPT.ConvertDoseLevelToStructure(NewPlan.Dose, new DoseValue(50, DoseUnit.Percent));
                 //await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
                 PTV_OPT.SegmentVolume = PTV_OPT.AsymmetricMargin(margin);
-                if (Settings.Debug) { await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC"); }
+                if (_settings.Debug) { await UpdateListBox($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC"); }
                 Log.Debug($"Create PTV_OPT from 50IDL with volume: {PTV_OPT.Volume:F2} CC");
             }
 
             else
             {
+                // Use fresh structure reference from new plan
+                var newSelectedPTV = CopiedSS.Structures.FirstOrDefault(s => s.Id == SelectedPTV?.Id);
+                if (newSelectedPTV == null)
+                {
+                    throw new Exception($"Selected PTV '{SelectedPTV?.Id}' not found in copied structure set.");
+                }
 
-                PTV_OPT.SegmentVolume = SelectedPTV.SegmentVolume;
-                if (Settings.Debug) { await UpdateListBox($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC"); }
-                Log.Debug($"Using custom PTV: {selectedPTV.Id} with volume: {selectedPTV.Volume:F2} CC");
+                PTV_OPT.SegmentVolume = newSelectedPTV.SegmentVolume;
+                if (_settings.Debug) { await UpdateListBox($"Using custom PTV: {newSelectedPTV.Id} with volume: {newSelectedPTV.Volume:F2} CC"); }
+                Log.Debug($"Using custom PTV: {newSelectedPTV.Id} with volume: {newSelectedPTV.Volume:F2} CC");
             }
 
             if (PTV_OPT.Volume < 0.0001)
@@ -537,8 +538,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 AddStructIfNotExists($"__IDL{idl}", CopiedSS, NewPlan, new DoseValue(idl, DoseUnit.Percent), true);
             }
 
-            // Spare heart and lung on PTV
-            Utils.SpareLungHeart(PTV_OPT, Ipsi_lung, Heart, CopiedSS);
+            // Spare heart and lung on PTV - use fresh structure references from new plan
+            var newIpsiLung = CopiedSS.Structures.FirstOrDefault(s => s.Id == Ipsi_lung?.Id);
+            var newHeart = CopiedSS.Structures.FirstOrDefault(s => s.Id == Heart?.Id);
+            
+            if (newIpsiLung != null && newHeart != null)
+            {
+                Utils.SpareLungHeart(PTV_OPT, newIpsiLung, newHeart, CopiedSS);
+            }
 
 
             // Optimization options
@@ -548,14 +555,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 OptimizationIntermediateDoseOption.UseIntermediateDose,
                 NewPlan.Beams.First().MLC.Id);
 
-            var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(Plan.Beams.First());
+            var unpack_getFluenceEnergyMode = Utils.GetFluenceEnergyMode(originalPlan.Beams.First());
             string primary_fluence_mode = unpack_getFluenceEnergyMode.Item1;
             string energy_mode_id = unpack_getFluenceEnergyMode.Item2;
 
             var machineParameters = new ExternalBeamMachineParameters(
-                Plan.Beams.First().TreatmentUnit.Id,
+                originalPlan.Beams.First().TreatmentUnit.Id,
                 energy_mode_id,
-                Plan.Beams.First().DoseRate,
+                originalPlan.Beams.First().DoseRate,
                 "STATIC",
                 primary_fluence_mode
             );
@@ -569,7 +576,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 }
             }
 
-            foreach (var bm in Plan.Beams.Where(b => !b.IsSetupField).ToList())
+            foreach (var bm in originalPlan.Beams.Where(b => !b.IsSetupField).ToList())
             {
                 //  beam is a not a setup field 
                 Beam Temp = NewPlan.AddStaticBeam(
@@ -586,14 +593,14 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             // Get optimization setup
             var optSet = NewPlan.OptimizationSetup;
-            var RxDose = Plan.TotalDose;
+            var RxDose = originalPlan.TotalDose;
 
             // Clear all previous optimization objectives
-            foreach (var oldObjective in optSet.Objectives)
-            {
-                optSet.RemoveObjective(oldObjective);
-                if (Settings.Debug) { await UpdateListBox($"Removed old objective {oldObjective}"); }
-            }
+                foreach (var oldObjective in optSet.Objectives)
+                {
+                    optSet.RemoveObjective(oldObjective);
+                    if (_settings.Debug) { await UpdateListBox($"Removed old objective {oldObjective}"); }
+                }
 
             // Add all objectives
             // -- PTV_OPT --: 
@@ -608,142 +615,150 @@ namespace MAAS_BreastPlan_helper.ViewModels
             //if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
             //optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator , new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
 
-            // Zero NTO if settings tell us to
-            // RC - NTO priority = 0. Other setting values must be > 0. Changed these values to default NTO settings.
-            if (Settings.KillNormalTissueObjectives)
-            {
-                if (Settings.Debug) { await UpdateListBox("Creating 0 priority NTO objective"); }
-                optSet.AddNormalTissueObjective(0, 10, 105, 60, 0.05); // This just ensures that the priority of the NTO objective is zero
-            }
-
-            if (Settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
-            optSet.AddMeanDoseObjective(PTV_OPT, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
-            ////await UpdateListBox($"Added 2");
-            // - Lower 95 % Volume, 100 % Rx Dose – Priority 135
-            if (Settings.Debug) { await UpdateListBox("Creating lower 95 % Volume, 100 % Rx Dose – Priority 135"); }
-            optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(RxDose.Dose, RxDose.Unit), 95, 135);
-            ////await UpdateListBox($"Added 3");
-            // - Lower 99.9 % Volume, 95 % Rx Dose – Priority 130
-            if (Settings.Debug) { await UpdateListBox("Creating lower 99.9 % Volume, 95 % Rx Dose – Priority 130"); }
-            optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(0.95 * RxDose.Dose, RxDose.Unit), 99.9, 130);
-            ////await UpdateListBox($"Added 4");
-            // -- Body --
-            // - Upper 0 % Volume, 108 % Rx Dose – Priority 200
-            if (Settings.Debug) { await UpdateListBox("Creating upper 0 % Volume, 108 % Rx Dose – Priority 500"); }
-            optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue((double.Parse(MaxDoseGoal) / 100.0 - 0.01) * RxDose.Dose, RxDose.Unit), 0, 500);
-            ////await UpdateListBox($"Added 5");
-            // -- 91 % IDL structure --
-            // - Upper 0 % Volume, 103 % Rx Dose – Priority 141
-            if (Settings.Debug) { await UpdateListBox("Creating upper  5% Volume, 103 % Rx Dose – Priority 141"); }
-            optSet.AddPointObjective(IDL91, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 0, 141);
-            ////await UpdateListBox($"Added 6");
-            // -- 94 % IDL structure --
-            // - Upper 0 % Volume, 102 % Rx Dose – Priority 143
-            if (Settings.Debug) { await UpdateListBox("Creating upper  0% Volume, 102 % Rx Dose – Priority 143"); }
-            optSet.AddPointObjective(IDL94, OptimizationObjectiveOperator.Upper, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 0, 143);
-            // -- 97 % IDL structure --
-            // - Upper 0 % Volume, 102 % Rx Dose – Priority 145
-            if (Settings.Debug) { await UpdateListBox("Creating upper  0% Volume, 102 % Rx Dose – Priority 145"); }
-            optSet.AddPointObjective(IDL97, OptimizationObjectiveOperator.Upper, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 0, 145);
-            // -- 88 % IDL structure --
-            // - Upper 20 % Volume, 103 % Rx Dose – Priority 118
-            if (Settings.Debug) { await UpdateListBox("Creating upper  20% Volume, 103 % Rx Dose – Priority 118"); }
-            optSet.AddPointObjective(IDL88, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 20, 118);
-            // -- 88 % IDL structure --
-            // - Upper 6 % Volume, 105 % Rx Dose – Priority 122
-            if (Settings.Debug) { await UpdateListBox("Creating upper  6% Volume, 105 % Rx Dose – Priority 122"); }
-            optSet.AddPointObjective(IDL88, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 6, 122);
-            // -- 85 % IDL structure --
-            // - Upper 25 % Volume, 103 % Rx Dose – Priority 115
-            if (Settings.Debug) { await UpdateListBox("Creating upper  25% Volume, 103 % Rx Dose – Priority 115"); }
-            optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 25, 115);
-            // -- 85 % IDL structure --                    
-            // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
-            if (Settings.Debug) { await UpdateListBox("Creating upper  10% Volume, 105 % Rx Dose – Priority 120"); }
-            optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
-
-            // Add fluence smoothing and fixed jaw (on/off) to all beams
-            foreach (var bm in NewPlan.Beams.Where(b => !b.IsSetupField).ToList())
-            {
-                if (Settings.Debug) { await UpdateListBox($"{bm.Id}: Setting fluence smoothing factors {Settings.SmoothX} / {Settings.SmoothY} | jaws fixed: {Settings.FixedJaws}"); }
-                optSet.AddBeamSpecificParameter(bm, Settings.SmoothX, Settings.SmoothY, Settings.FixedJaws);
-            }
-
-            // Optimize
-            if (Settings.Debug) { await UpdateListBox($"Starting initial pass"); }
-            Log.Debug("Starting initial pass");
-            NewPlan.Optimize(opt);
-            if (Settings.Debug) { await UpdateListBox($"Finished initial pass"); }
-            Log.Debug("Finished initial pass");
-
-            // Calculate leaf motions and dose after first optimization           
-            NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-            if (Settings.Debug) { await UpdateListBox($"Calc'ing leaf motions with fixed jaws: {Settings.FixedJaws}"); }
-            var lmcOptions = new LMCVOptions(Settings.FixedJaws);
-            NewPlan.CalculateLeafMotions(lmcOptions);
-
-            if (Settings.Debug) { await UpdateListBox($"Calc'ing dose"); }
-            Log.Debug("Calc'ing dose");
-            NewPlan.CalculateDose();
-            // Calculate dose after first optimization
-            if (Settings.Debug) { await UpdateListBox($"Finished calc'ing dose"); }
-            Log.Debug("Finished calc'ing dose");
-
-            // Dose level check
-            DoseValue HotSpotIDL = new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent);
-            if (HotSpotIDL > NewPlan.Dose.DoseMax3D)
-            {
-                var msg = $"Warning: HotspotIDL from config {Settings.HotSpotIDL} is greater than 3D dose max: {NewPlan.Dose.DoseMax3D.Dose}";
-                if (Settings.Debug) { await UpdateListBox(msg); }
-                Log.Debug(msg);
-
-                HotSpotIDL = NewPlan.Dose.DoseMax3D * 0.99;
-            }
-
-            SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, selectedBreastSide, NewPlan.Dose.DoseMax3DLocation.z);
-
-            if (Settings.SecondOpt)
-            {
-                if (Settings.Debug) { await UpdateListBox("Starting second pass"); }
-                Log.Debug("Starting second pass");
-                // Create hot and cold spotes
-
-                if (Settings.HotColdIDLSecondOpt)
+                // Zero NTO if settings tell us to
+                // RC - NTO priority = 0. Other setting values must be > 0. Changed these values to default NTO settings.
+                if (_settings.KillNormalTissueObjectives)
                 {
-                    var coldSpot = AddStructIfNotExists("__coldSpot", CopiedSS, NewPlan, new DoseValue(Settings.ColdSpotIDL, DoseValue.DoseUnit.Percent), true);
-                    coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
+                    if (_settings.Debug) { await UpdateListBox("Creating 0 priority NTO objective"); }
+                    optSet.AddNormalTissueObjective(0, 10, 105, 60, 0.05); // This just ensures that the priority of the NTO objective is zero
+                }
 
-                    var hotSpot = AddStructIfNotExists("__hotSpot", CopiedSS, NewPlan, new DoseValue(Settings.HotSpotIDL, DoseValue.DoseUnit.Percent), true);
+                if (_settings.Debug) { await UpdateListBox("Creating Mean, 102 % Rx Dose – Priority 50"); }
+                optSet.AddMeanDoseObjective(PTV_OPT, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 50);
+                ////await UpdateListBox($"Added 2");
+                // - Lower 95 % Volume, 100 % Rx Dose – Priority 135
+                if (_settings.Debug) { await UpdateListBox("Creating lower 95 % Volume, 100 % Rx Dose – Priority 135"); }
+                optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(RxDose.Dose, RxDose.Unit), 95, 135);
+                ////await UpdateListBox($"Added 3");
+                // - Lower 99.9 % Volume, 95 % Rx Dose – Priority 130
+                if (_settings.Debug) { await UpdateListBox("Creating lower 99.9 % Volume, 95 % Rx Dose – Priority 130"); }
+                optSet.AddPointObjective(PTV_OPT, OptimizationObjectiveOperator.Lower, new DoseValue(0.95 * RxDose.Dose, RxDose.Unit), 99.9, 130);
+            ////await UpdateListBox($"Added 4");
+                // -- Body --
+                // - Upper 0 % Volume, 108 % Rx Dose – Priority 200
+                if (_settings.Debug) { await UpdateListBox("Creating upper 0 % Volume, 108 % Rx Dose – Priority 500"); }
+                optSet.AddPointObjective(body, OptimizationObjectiveOperator.Upper, new DoseValue((double.Parse(MaxDoseGoal) / 100.0 - 0.01) * RxDose.Dose, RxDose.Unit), 0, 500);
+                ////await UpdateListBox($"Added 5");
+                // -- 91 % IDL structure --
+                // - Upper 0 % Volume, 103 % Rx Dose – Priority 141
+                if (_settings.Debug) { await UpdateListBox("Creating upper  5% Volume, 103 % Rx Dose – Priority 141"); }
+                optSet.AddPointObjective(IDL91, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 0, 141);
+                ////await UpdateListBox($"Added 6");
+                // -- 94 % IDL structure --
+                // - Upper 0 % Volume, 102 % Rx Dose – Priority 143
+                if (_settings.Debug) { await UpdateListBox("Creating upper  0% Volume, 102 % Rx Dose – Priority 143"); }
+                optSet.AddPointObjective(IDL94, OptimizationObjectiveOperator.Upper, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 0, 143);
+                // -- 97 % IDL structure --
+                // - Upper 0 % Volume, 102 % Rx Dose – Priority 145
+                if (_settings.Debug) { await UpdateListBox("Creating upper  0% Volume, 102 % Rx Dose – Priority 145"); }
+                optSet.AddPointObjective(IDL97, OptimizationObjectiveOperator.Upper, new DoseValue(1.02 * RxDose.Dose, RxDose.Unit), 0, 145);
+                // -- 88 % IDL structure --
+                // - Upper 20 % Volume, 103 % Rx Dose – Priority 118
+                if (_settings.Debug) { await UpdateListBox("Creating upper  20% Volume, 103 % Rx Dose – Priority 118"); }
+                optSet.AddPointObjective(IDL88, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 20, 118);
+                // -- 88 % IDL structure --
+                // - Upper 6 % Volume, 105 % Rx Dose – Priority 122
+                if (_settings.Debug) { await UpdateListBox("Creating upper  6% Volume, 105 % Rx Dose – Priority 122"); }
+                optSet.AddPointObjective(IDL88, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 6, 122);
+                // -- 85 % IDL structure --
+                // - Upper 25 % Volume, 103 % Rx Dose – Priority 115
+                if (_settings.Debug) { await UpdateListBox("Creating upper  25% Volume, 103 % Rx Dose – Priority 115"); }
+                optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 25, 115);
+                // -- 85 % IDL structure --                    
+                // - Upper 10 % Volume, 105 % Rx Dose – Priority 120
+                if (_settings.Debug) { await UpdateListBox("Creating upper  10% Volume, 105 % Rx Dose – Priority 120"); }
+                optSet.AddPointObjective(IDL85, OptimizationObjectiveOperator.Upper, new DoseValue(1.05 * RxDose.Dose, RxDose.Unit), 10, 120);
 
-                    // Add objectives for hot and cold spot
-                    //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
+                // Add fluence smoothing and fixed jaw (on/off) to all beams
+                foreach (var bm in NewPlan.Beams.Where(b => !b.IsSetupField).ToList())
+                {
+                    if (_settings.Debug) { await UpdateListBox($"{bm.Id}: Setting fluence smoothing factors {_settings.SmoothX} / {_settings.SmoothY} | jaws fixed: {_settings.FixedJaws}"); }
+                    optSet.AddBeamSpecificParameter(bm, _settings.SmoothX, _settings.SmoothY, _settings.FixedJaws);
+                }
 
-                    var RxDose_ = Plan.TotalDose;
-                    optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose_.Dose, RxDose_.Unit), 0, 35);
-                    optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose_.Dose, RxDose_.Unit), 100, 40);
+                // Optimize
+                if (_settings.Debug) { await UpdateListBox($"Starting initial pass"); }
+                Log.Debug("Starting initial pass");
+                NewPlan.Optimize(opt);
+                if (_settings.Debug) { await UpdateListBox($"Finished initial pass"); }
+                Log.Debug("Finished initial pass");
+
+                // Calculate leaf motions and dose after first optimization           
+                NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, _settings.LMCModel);
+                if (_settings.Debug) { await UpdateListBox($"Calc'ing leaf motions with fixed jaws: {_settings.FixedJaws}"); }
+                var lmcOptions = new LMCVOptions(_settings.FixedJaws);
+                NewPlan.CalculateLeafMotions(lmcOptions);
+
+                if (_settings.Debug) { await UpdateListBox($"Calc'ing dose"); }
+                Log.Debug("Calc'ing dose");
+                NewPlan.CalculateDose();
+                // Calculate dose after first optimization
+                if (_settings.Debug) { await UpdateListBox($"Finished calc'ing dose"); }
+                Log.Debug("Finished calc'ing dose");
+
+                // Dose level check
+                DoseValue HotSpotIDL = new DoseValue(_settings.HotSpotIDL, DoseValue.DoseUnit.Percent);
+                if (HotSpotIDL > NewPlan.Dose.DoseMax3D)
+                {
+                    var msg = $"Warning: HotspotIDL from config {_settings.HotSpotIDL} is greater than 3D dose max: {NewPlan.Dose.DoseMax3D.Dose}";
+                    if (_settings.Debug) { await UpdateListBox(msg); }
+                    Log.Debug(msg);
+
+                    HotSpotIDL = NewPlan.Dose.DoseMax3D * 0.99;
+                }
+
+                SepDmaxEdgeAfterOpt = Utils.ComputeBeamSeparationWholeField(NewPlan.Beams.First(), NewPlan.Beams.Last(), body, SelectedBreastSide, NewPlan.Dose.DoseMax3DLocation.z);
+
+                if (_settings.SecondOpt)
+                {
+                    if (_settings.Debug) { await UpdateListBox("Starting second pass"); }
+                    Log.Debug("Starting second pass");
+                    // Create hot and cold spotes
+
+                    if (_settings.HotColdIDLSecondOpt)
+                    {
+                        var coldSpot = AddStructIfNotExists("__coldSpot", CopiedSS, NewPlan, new DoseValue(_settings.ColdSpotIDL, DoseValue.DoseUnit.Percent), true);
+                        coldSpot.SegmentVolume = PTV_OPT.Sub(coldSpot.SegmentVolume);
+
+                        var hotSpot = AddStructIfNotExists("__hotSpot", CopiedSS, NewPlan, new DoseValue(_settings.HotSpotIDL, DoseValue.DoseUnit.Percent), true);
+
+                        // Add objectives for hot and cold spot
+                        //optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(((MaxDoseGoal/100) - 0.02) * RxDose.Dose, RxDose.Unit), 10, 60);
+
+                        optSet.AddPointObjective(hotSpot, OptimizationObjectiveOperator.Upper, new DoseValue(1.03 * RxDose.Dose, RxDose.Unit), 0, 35);
+                        optSet.AddPointObjective(coldSpot, OptimizationObjectiveOperator.Lower, new DoseValue(0.98 * RxDose.Dose, RxDose.Unit), 100, 40);
+
+                    }
+
+                    NewPlan.Optimize(opt);
+                    NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, _settings.LMCModel);
+                    NewPlan.CalculateLeafMotions(lmcOptions);
+                    NewPlan.CalculateDose();
+
+                    if (_settings.Debug) { await UpdateListBox("Finished second pass"); }
+                    Log.Debug("Finished second pass");
 
                 }
 
-                NewPlan.Optimize(opt);
-                NewPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, Settings.LMCModel);
-                NewPlan.CalculateLeafMotions(lmcOptions);
-                NewPlan.CalculateDose();
+                if (_settings.Cleanup)
+                {
+                    var optStructs = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
+                    foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
+                }
 
-                if (Settings.Debug) { await UpdateListBox("Finished second pass"); }
-                Log.Debug("Finished second pass");
+                if (_settings.Debug) { await UpdateListBox("Complete. Close window to view plan."); }
+                Log.Debug("Complete. Close window to view plan");
 
-            }
+                // Notify completion and trigger refresh of other ViewModels
+                StatusMessage = "Plan creation completed. Other tabs will be refreshed automatically.";
+                PlanCreationCompleted = true;
 
-            if (Settings.Cleanup)
+                MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
+            },
+            ex =>
             {
-                var optStructs = CopiedSS.Structures.Where(s => s.Id.StartsWith("__")).ToList();
-                foreach (var os in optStructs) { CopiedSS.RemoveStructure(os); }
-            }
-
-            if (Settings.Debug) { await UpdateListBox("Complete. Close window to view plan."); }
-            Log.Debug("Complete. Close window to view plan");
-
-            MessageBox.Show($"Plan created with ID {NewPlan.Id}. Please close tool to view.");
+                StatusMessage = $"Error: {ex.Message}";
+            });
         }
 
         private Tuple<string, string> splitLMC(string lMCModel)
@@ -793,8 +808,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private string _selectedStatusItem;
         public string SelectedStatusItem
         {
-            get => _selectedStatusItem;
-            set => SetProperty(ref _selectedStatusItem, value);
+            get { return _selectedStatusItem; }
+            set { SetProperty(ref _selectedStatusItem, value); }
         }
 
         private void Execute()
@@ -826,8 +841,15 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private string _statusMessage;
         public string StatusMessage
         {
-            get => _statusMessage;
-            set => SetProperty(ref _statusMessage, value);
+            get { return _statusMessage; }
+            set { SetProperty(ref _statusMessage, value); }
+        }
+
+        private bool _planCreationCompleted = false;
+        public bool PlanCreationCompleted
+        {
+            get { return _planCreationCompleted; }
+            set { SetProperty(ref _planCreationCompleted, value); }
         }
     }
 }

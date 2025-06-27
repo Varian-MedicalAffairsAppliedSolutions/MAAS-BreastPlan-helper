@@ -16,6 +16,7 @@ using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using System.Windows.Input;
 using Prism.Commands;
+using MAAS_BreastPlan_helper.Services;
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {  
@@ -39,22 +40,22 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
     public class EthosBeamDialogViewModel : BindableBase
     {
-        private readonly ScriptContext _context;
+        private readonly EsapiWorker _esapiWorker;
         private string _statusMessage = "Ready";
-        private string output;
-        private bool modifying;
+        private string _output;
+        private bool _modifying;
         public BeamParameters beamParams;
 
         public string StatusMessage
         {
-            get => _statusMessage;
-            set => SetProperty(ref _statusMessage, value);
+            get { return _statusMessage; }
+            set { SetProperty(ref _statusMessage, value); }
         }
 
         public string Output
         {
-            get { return output; }
-            set { SetProperty(ref output, value); }
+            get { return _output; }
+            set { SetProperty(ref _output, value); }
         }
 
         public DelegateCommand ExecuteCommand { get; private set; }
@@ -73,69 +74,69 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public ObservableCollection<string> LateralityOptions
         {
-            get => _lateralityOptions;
-            set => SetProperty(ref _lateralityOptions, value);
+            get { return _lateralityOptions; }
+            set { SetProperty(ref _lateralityOptions, value); }
         }
 
         public int SideSelected
         {
-            get => _sideSelected;
-            set => SetProperty(ref _sideSelected, value);
+            get { return _sideSelected; }
+            set { SetProperty(ref _sideSelected, value); }
         }
 
         public string MachineScale
         {
-            get => _machineScale;
-            set => SetProperty(ref _machineScale, value);
+            get { return _machineScale; }
+            set { SetProperty(ref _machineScale, value); }
         }
 
         public ObservableCollection<Beam> Fields
         {
-            get => _fields;
-            set => SetProperty(ref _fields, value);
+            get { return _fields; }
+            set { SetProperty(ref _fields, value); }
         }
 
         public int FieldSelected
         {
-            get => _fieldSelected;
-            set => SetProperty(ref _fieldSelected, value);
+            get { return _fieldSelected; }
+            set { SetProperty(ref _fieldSelected, value); }
         }
 
         public ObservableCollection<string> AllStructures
         {
-            get => _allStructures;
-            set => SetProperty(ref _allStructures, value);
+            get { return _allStructures; }
+            set { SetProperty(ref _allStructures, value); }
         }
 
         public int AlignSelected
         {
-            get => _alignSelected;
-            set => SetProperty(ref _alignSelected, value);
+            get { return _alignSelected; }
+            set { SetProperty(ref _alignSelected, value); }
         }
 
         public int TargetSelected
         {
-            get => _targetSelected;
-            set => SetProperty(ref _targetSelected, value);
+            get { return _targetSelected; }
+            set { SetProperty(ref _targetSelected, value); }
         }
 
         public ObservableCollection<OffsetBeam> Beams
         {
-            get => _beams;
-            set => SetProperty(ref _beams, value);
+            get { return _beams; }
+            set { SetProperty(ref _beams, value); }
         }
 
         public int TargetMargin
         {
-            get => _targetMargin;
-            set => SetProperty(ref _targetMargin, value);
+            get { return _targetMargin; }
+            set { SetProperty(ref _targetMargin, value); }
         }
 
-        public EthosBeamDialogViewModel(ScriptContext context)
+        public EthosBeamDialogViewModel(EsapiWorker esapiWorker)
         {
-            _context = context;
+            _esapiWorker = esapiWorker;
             ExecuteCommand = new DelegateCommand(Execute, CanExecute);
-            modifying = false;
+            _modifying = false;
 
             // Initialize UI properties
             Initialize();
@@ -150,9 +151,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 SideSelected = 0; // Default to Left
 
                 // Initialize machine scale
-                if (_context.PlanSetup != null)
+                _esapiWorker.RunWithWait(sc =>
                 {
-                    var treatmentUnit = _context.PlanSetup.Beams.FirstOrDefault()?.TreatmentUnit;
+                    if (sc.PlanSetup != null)
+                    {
+                        var treatmentUnit = sc.PlanSetup.Beams.FirstOrDefault()?.TreatmentUnit;
                     MachineScale = treatmentUnit?.MachineScaleDisplayName ?? "Unknown";
                 }
                 else
@@ -161,23 +164,24 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 }
 
                 // Initialize fields (beams)
-                if (_context.PlanSetup != null)
+                    if (sc.PlanSetup != null)
                 {
-                    Fields = new ObservableCollection<Beam>(_context.PlanSetup.Beams);
+                        Fields = new ObservableCollection<Beam>(sc.PlanSetup.Beams);
                     FieldSelected = 0;
                 }
 
                 // Initialize structures
-                if (_context.StructureSet != null)
+                    if (sc.StructureSet != null)
                 {
                     AllStructures = new ObservableCollection<string>(
-                        _context.StructureSet.Structures
+                            sc.StructureSet.Structures
                             .Where(s => !s.IsEmpty && s.Id != "")
                             .Select(s => s.Id)
                     );
                     AlignSelected = 0;
                     TargetSelected = 0;
                 }
+                });
 
                 // Initialize sample beams
                 Beams = new ObservableCollection<OffsetBeam>();
@@ -204,7 +208,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         private bool CanExecute()
         {
-            return _context?.PlanSetup != null;
+            return _esapiWorker.GetValue(sc => sc.PlanSetup) != null;
         }
 
         private void Execute()
@@ -227,14 +231,21 @@ namespace MAAS_BreastPlan_helper.ViewModels
             // Implementation of beam creation logic
             Output = "Creating beams...";
             
-            if (!modifying)
+            _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
-                _context.Patient.BeginModifications();
-                modifying = true;
+                if (!_modifying)
+            {
+                    sc.Patient.BeginModifications();
+                    _modifying = true;
             }
             
             FindBeamAngles();
             Output += "\nBeams created successfully.";
+            },
+            ex =>
+            {
+                StatusMessage = $"Error creating beams: {ex.Message}";
+            });
         }
 
         public void RecalculateBeams()
@@ -263,24 +274,38 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public void RecalculateColls()
         {
-            if (!modifying)
+            _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
-                _context.Patient.BeginModifications();
-                modifying = true;
+                if (!_modifying)
+            {
+                    sc.Patient.BeginModifications();
+                    _modifying = true;
             }
 
             Output += "\n -- Calculated Collimator Angles";
+            },
+            ex =>
+            {
+                StatusMessage = $"Error recalculating collimators: {ex.Message}";
+            });
         }
 
         public void RecalculateMLCs()
         {
-            if (!modifying)
+            _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
-                _context.Patient.BeginModifications();
-                modifying = true;
+                if (!_modifying)
+            {
+                    sc.Patient.BeginModifications();
+                    _modifying = true;
             }
 
             Output += "\n -- MLC shapes updated";
+            },
+            ex =>
+            {
+                StatusMessage = $"Error recalculating MLCs: {ex.Message}";
+            });
         }
 
         public void FindBeamAngles()
@@ -290,13 +315,20 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
         public void DeleteBeams()
         {
-            if (!modifying)
+            _esapiWorker.ExecuteWithErrorHandling(sc =>
             {
-                _context.Patient.BeginModifications();
-                modifying = true;
+                if (!_modifying)
+            {
+                    sc.Patient.BeginModifications();
+                    _modifying = true;
             }
             
             Output += "\n - Removed selected fields";
+            },
+            ex =>
+            {
+                StatusMessage = $"Error deleting beams: {ex.Message}";
+            });
         }
 
         public void updateBeamParameters()
