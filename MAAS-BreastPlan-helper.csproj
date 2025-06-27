@@ -172,8 +172,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomControls\ScrollingListBox.cs" />
+    <Compile Include="Models\SettingsClass.cs" />
     <Compile Include="Models\TextBlockOutputter.cs" />
     <Compile Include="Models\Utils.cs" />
+    <Compile Include="Services\AppConfigHelper.cs" />
+    <Compile Include="Services\EsapiWorker.cs" />
     <Compile Include="ViewModels\Auto3dSlidingWindowViewModel.cs" />
     <Compile Include="ViewModels\BreastFiFViewModel.cs" />
     <Compile Include="ViewModels\FluenceExtensionViewModel.cs" />
@@ -189,6 +192,9 @@
     <Compile Include="Views\EthosBeamDialog.xaml.cs">
       <DependentUpon>EthosBeamDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\TangentPlacement.xaml.cs">
+      <DependentUpon>TangentPlacement.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyExpirationDate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
@@ -199,12 +205,8 @@
     <Compile Include="Views\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Models\SettingsClass.cs" />
     <Compile Include="Views\BreastFiF.xaml.cs">
       <DependentUpon>BreastFiF.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Views\TangentPlacement.xaml.cs">
-      <DependentUpon>TangentPlacement.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModels\TangentPlacementViewModel.cs" />
   </ItemGroup>

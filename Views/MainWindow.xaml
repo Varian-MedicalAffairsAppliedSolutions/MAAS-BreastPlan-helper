@@ -7,7 +7,7 @@
                    xmlns:local="clr-namespace:MAAS_BreastPlan_helper"
                    xmlns:models="clr-namespace:MAAS_BreastPlan_helper.Models"
                    mc:Ignorable="d"
-                   Title="MAAS-BreastPlan-helper"
+                   Title="{Binding WindowTitle}"
                    FontWeight="DemiBold"
                    Height="750"
                    Width="1000"

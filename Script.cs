@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using System.Windows.Media.Imaging;
 using MAAS.Common.EulaVerification;
 using MAAS_BreastPlan_helper.ViewModels;
+using MAAS_BreastPlan_helper.Services;
 
 // TODO: Uncomment the following line if the script requires write access.
 //15.x or later:
@@ -155,9 +156,7 @@ namespace VMS.TPS
                 }
 
                 // Launch UI
-                var viewModel = new MainViewModel(context, settings);
                 var mainWindow = new MainWindow(context, settings, jsonPath);
-                mainWindow.DataContext = viewModel;
                 mainWindow.ShowDialog();
             }
             catch (Exception ex)

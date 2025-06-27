@@ -14,15 +14,17 @@ using VMS.TPS.Common.Model.Types;
 using System.Windows.Controls;
 using System.IO;
 using MAAS_BreastPlan_helper.Models;
+using MAAS_BreastPlan_helper.Services;
 using MAAS_BreastPlan_helper.Views;
 using static MAAS_BreastPlan_helper.ViewModels.FluenceExtensionViewModel;
+using Prism.Commands;
 
 
 namespace MAAS_BreastPlan_helper.ViewModels
 {
     public class FluenceExtensionViewModel : BindableBase
     {
-        private readonly ScriptContext _context;
+        private readonly EsapiWorker _esapiWorker;
         private readonly SettingsClass _settings;
         private Structure _body;
 
@@ -30,29 +32,29 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private ObservableCollection<Structure> _structures;
         public ObservableCollection<Structure> Structures
         {
-            get => _structures;
-            set => SetProperty(ref _structures, value);
+            get { return _structures; }
+            set { SetProperty(ref _structures, value); }
         }
 
         private ObservableCollection<BeamSelectionItem> _beamSelectionItems;
         public ObservableCollection<BeamSelectionItem> BeamSelectionItems
         {
-            get => _beamSelectionItems;
-            set => SetProperty(ref _beamSelectionItems, value);
+            get { return _beamSelectionItems; }
+            set { SetProperty(ref _beamSelectionItems, value); }
         }
 
         private ObservableCollection<string> _fluenceDepthOptions;
         public ObservableCollection<string> FluenceDepthOptions
         {
-            get => _fluenceDepthOptions;
-            set => SetProperty(ref _fluenceDepthOptions, value);
+            get { return _fluenceDepthOptions; }
+            set { SetProperty(ref _fluenceDepthOptions, value); }
         }
 
         // Selected Structure
         private Structure _selectedPTVStructure;
         public Structure SelectedPTVStructure
         {
-            get => _selectedPTVStructure;
+            get { return _selectedPTVStructure; }
             set
             {
                 SetProperty(ref _selectedPTVStructure, value);
@@ -64,7 +66,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private string _fluenceExtent;
         public string FluenceExtent
         {
-            get => _fluenceExtent;
+            get { return _fluenceExtent; }
             set
             {
                 SetProperty(ref _fluenceExtent, value);
@@ -75,7 +77,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private string _selectedFluenceDepth;
         public string SelectedFluenceDepth
         {
-            get => _selectedFluenceDepth;
+            get { return _selectedFluenceDepth; }
             set
             {
                 SetProperty(ref _selectedFluenceDepth, value);
@@ -87,54 +89,57 @@ namespace MAAS_BreastPlan_helper.ViewModels
         private string _statusMessage;
         public string StatusMessage
         {
-            get => _statusMessage;
-            set => SetProperty(ref _statusMessage, value);
+            get { return _statusMessage; }
+            set { SetProperty(ref _statusMessage, value); }
         }
 
         // Command
-        public ICommand ConfirmSelectionCommand { get; private set; }
+        public DelegateCommand ConfirmSelectionCommand { get; private set; }
 
         // Constructor
-        public FluenceExtensionViewModel(ScriptContext context, SettingsClass settings)
+        public FluenceExtensionViewModel(EsapiWorker esapiWorker, SettingsClass settings)
         {
-            _context = context;
+            _esapiWorker = esapiWorker;
             _settings = settings;
-            ConfirmSelectionCommand = new RelayCommand(ExecuteConfirmSelection, CanExecuteConfirmSelection);
-            Initialize(context, settings);
+            ConfirmSelectionCommand = new DelegateCommand(ExecuteConfirmSelection, CanExecuteConfirmSelection);
+            Initialize();
         }
 
-        private void Initialize(ScriptContext context, SettingsClass settings)
+        private void Initialize()
         {
-            // Get the body structure
-            _body = context.StructureSet.Structures.FirstOrDefault(x => x.DicomType == "EXTERNAL");
+            _esapiWorker.RunWithWait(sc =>
+            {
+                // Get the body structure
+                _body = sc.StructureSet.Structures.FirstOrDefault(x => x.DicomType == "EXTERNAL");
 
-            // Initialize collections
-            Structures = new ObservableCollection<Structure>(
-                context.StructureSet.Structures.Where(s => s.Id.Contains("PTV"))
-            );
+                // Initialize collections
+                Structures = new ObservableCollection<Structure>(
+                    sc.StructureSet.Structures.Where(s => s.Id.Contains("PTV"))
+                );
 
-            BeamSelectionItems = new ObservableCollection<BeamSelectionItem>(
-                context.ExternalPlanSetup.Beams
-                    .Where(b => b.GetOptimalFluence() != null)
-                    .Select(b => new BeamSelectionItem { BeamId = b.Id, IsSelected = false, Beam = b })
-            );
+                BeamSelectionItems = new ObservableCollection<BeamSelectionItem>(
+                    sc.ExternalPlanSetup.Beams
+                        .Where(b => b.GetOptimalFluence() != null)
+                        .Select(b => new BeamSelectionItem { BeamId = b.Id, IsSelected = false, Beam = b })
+                );
 
-            FluenceDepthOptions = new ObservableCollection<string> { "0.5", "0.6", "0.7", "0.8", "0.9", "1.0" };
-            FluenceExtent = "2.0"; // Default value
+                FluenceDepthOptions = new ObservableCollection<string> { "0.5", "0.6", "0.7", "0.8", "0.9", "1.0" };
+                FluenceExtent = "2.0"; // Default value
+            });
         }
 
-        private bool CanExecuteConfirmSelection(object parameter)
+        private bool CanExecuteConfirmSelection()
         {
             bool hasStructure = SelectedPTVStructure != null;
             bool hasExtent = !string.IsNullOrWhiteSpace(FluenceExtent);
             bool hasDepth = !string.IsNullOrWhiteSpace(SelectedFluenceDepth);
-            bool hasSelectedBeam = BeamSelectionItems.Any(item => item.IsSelected);
+            bool hasSelectedBeam = BeamSelectionItems?.Any(item => item.IsSelected) ?? false;
 
             StatusMessage = $"Structure: {hasStructure}, Extent: {hasExtent}, Depth: {hasDepth}, Beam: {hasSelectedBeam}";
             return hasStructure && hasExtent && hasDepth && hasSelectedBeam;
         }
 
-        private void ExecuteConfirmSelection(object parameter)
+        private void ExecuteConfirmSelection()
         {
             ProcessBeams();
         }
@@ -148,13 +153,15 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     return;
                 }
 
-                // Begin modifications
-                _context.Patient.BeginModifications();
+                _esapiWorker.ExecuteWithErrorHandling(sc =>
+                {
+                    // Begin modifications
+                    sc.Patient.BeginModifications();
 
-                // Save initial plan state
-                var originalPlanId = _context.ExternalPlanSetup.Id;
-                var course = _context.Course;
-                var eps = _context.ExternalPlanSetup;
+                    // Save initial plan state
+                    var originalPlanId = sc.ExternalPlanSetup.Id;
+                    var course = sc.Course;
+                    var eps = sc.ExternalPlanSetup;
 
                 // Update plan ID for the modified version
                 int index = 1;
@@ -184,13 +191,18 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
                 processor.ProcessBeams(selectedBeams, eps);
 
-                StatusMessage = "Fluence extension completed successfully.";
-                
-                // Show message box with the created plan name
-                MessageBox.Show($"Plan '{eps.Id}' has been created successfully.", 
-                                "Fluence Extension Complete", 
-                                MessageBoxButton.OK, 
-                                MessageBoxImage.Information);
+                    StatusMessage = "Fluence extension completed successfully.";
+                    
+                    // Show message box with the created plan name
+                    MessageBox.Show($"Plan '{eps.Id}' has been created successfully.", 
+                                    "Fluence Extension Complete", 
+                                    MessageBoxButton.OK, 
+                                    MessageBoxImage.Information);
+                },
+                ex =>
+                {
+                    StatusMessage = $"Error: {ex.Message}";
+                });
             }
             catch (Exception ex)
             {
@@ -207,30 +219,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
             private bool _isSelected;
             public bool IsSelected
             {
-                get => _isSelected;
-                set => SetProperty(ref _isSelected, value);
-            }
-        }
-
-        public class RelayCommand : ICommand
-        {
-            private readonly Action<object> _execute;
-            private readonly Predicate<object> _canExecute;
-
-            public RelayCommand(Action<object> execute, Predicate<object> canExecute = null)
-            {
-                _execute = execute;
-                _canExecute = canExecute;
-            }
-
-            public bool CanExecute(object parameter) => _canExecute == null || _canExecute(parameter);
-
-            public void Execute(object parameter) => _execute(parameter);
-
-            public event EventHandler CanExecuteChanged
-            {
-                add { CommandManager.RequerySuggested += value; }
-                remove { CommandManager.RequerySuggested -= value; }
+                get { return _isSelected; }
+                set { SetProperty(ref _isSelected, value); }
             }
         }
 
