@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using System.IO;
 using VMS.TPS.Common.Model.API;
@@ -10,7 +11,7 @@ using VMS.TPS.Common.Model.Types;
 using System.Windows.Forms;
 using System.Reflection;
 using Microsoft.SqlServer.Server;
-using Prism.Mvvm;
+using Microsoft.Practices.Prism.Mvvm;
 using Prism.Commands;
 using System.Windows.Input;
 using MAAS_BreastPlan_helper.Models;
@@ -31,12 +32,47 @@ namespace MAAS_BreastPlan_helper.ViewModels
             get { return _statusMessage; }
             set { SetProperty(ref _statusMessage, value); }
         }
-        
-        private int _selectedSubFieldCount = 2; // Default to 5 subfields (index 2 = 5 subfields)
-        public int SelectedSubFieldCount
+
+        private int _selectedSubFieldCountMed = 2;
+        public int SelectedSubFieldCountMed
         {
-            get { return _selectedSubFieldCount; }
-            set { SetProperty(ref _selectedSubFieldCount, value); }
+            get { return _selectedSubFieldCountMed; }
+            set { SetProperty(ref _selectedSubFieldCountMed, value); }
+        }
+
+        private int _selectedSubFieldCountLat = 2;
+        public int SelectedSubFieldCountLat
+        {
+            get { return _selectedSubFieldCountLat; }
+            set { SetProperty(ref _selectedSubFieldCountLat, value); }
+        }
+
+        private bool _highEnergyFlag = false;
+        public bool HighEnergyFlag
+        {
+            get { return _highEnergyFlag; }
+            set { SetProperty(ref _highEnergyFlag, value); }
+        }
+
+        private int _highEnergyLevel = 3;
+        public int HighEnergyLevel
+        {
+            get { return _highEnergyLevel; }
+            set { SetProperty(ref _highEnergyLevel, value); }
+        }
+
+        private string _selectedHighEnergyMode = "15X";
+        public string SelectedHighEnergyMode
+        {
+            get { return _selectedHighEnergyMode; }
+            set { SetProperty(ref _selectedHighEnergyMode, value); }
+        }
+
+        private ObservableCollection<string> _highEnergyModes = new ObservableCollection<string>();
+        public ObservableCollection<string> HighEnergyModes
+        {
+            get { return _highEnergyModes; }
+            set { SetProperty(ref _highEnergyModes, value); }
         }
 
         public BreastFiFViewModel(EsapiWorker esapiWorker, SettingsClass settings)
@@ -46,11 +82,175 @@ namespace MAAS_BreastPlan_helper.ViewModels
             
             ExecuteCommand = new DelegateCommand(Execute, CanExecute);
             StatusMessage = "Ready";
+            
+            // Populate available high energy modes from the treatment machine
+            PopulateAvailableHighEnergyModes();
         }
 
         private bool CanExecute()
         {
             return _esapiWorker.GetValue(sc => sc.PlanSetup) != null;
+        }
+
+        private void PopulateAvailableHighEnergyModes()
+        {
+            try
+            {
+                _esapiWorker.ExecuteWithErrorHandling(sc =>
+                {
+                    // Clear existing modes
+                    HighEnergyModes.Clear();
+                    
+                    // Get the treatment machine from current plan's beams
+                    var currentPlan = sc.PlanSetup as ExternalPlanSetup;
+                    if (currentPlan?.Beams?.FirstOrDefault()?.TreatmentUnit == null)
+                    {
+                        // Fallback to default high energy modes if no plan/machine available
+                        HighEnergyModes.Add("10X");
+                        HighEnergyModes.Add("15X");
+                        HighEnergyModes.Add("18X");
+                        HighEnergyModes.Add("23X");
+                        StatusMessage = "Using default high energy modes (no active plan detected)";
+                        return;
+                    }
+                    
+                    var treatmentUnit = currentPlan.Beams.First().TreatmentUnit;
+                    var machineId = treatmentUnit.Id;
+                    
+                    // Get all available energy modes from the treatment unit
+                    var availableEnergyModes = new HashSet<string>();
+                    
+                    // Query available energy modes from the machine's capabilities
+                    // Note: ESAPI doesn't provide direct access to all machine energy modes,
+                    // so we'll use the energy modes from existing beams and supplement with common high energy modes
+                    
+                    // Get energy modes from current plan beams
+                    foreach (var beam in currentPlan.Beams.Where(b => !b.IsSetupField))
+                    {
+                        var energyMode = beam.EnergyModeDisplayName;
+                        if (!string.IsNullOrEmpty(energyMode))
+                        {
+                            // Extract just the energy part (e.g., "15X" from "15X-FFF")
+                            var energyOnly = energyMode.Split('-')[0];
+                            if (IsHighEnergyMode(energyOnly))
+                            {
+                                availableEnergyModes.Add(energyOnly);
+                            }
+                        }
+                    }
+                    
+                    // Add common high energy modes that might be available on this machine type
+                    var commonHighEnergyModes = GetCommonHighEnergyModes(machineId);
+                    foreach (var mode in commonHighEnergyModes)
+                    {
+                        availableEnergyModes.Add(mode);
+                    }
+                    
+                    // Sort and add to collection
+                    var sortedModes = availableEnergyModes.OrderBy(mode => 
+                    {
+                        // Extract numeric part for sorting
+                        var numericPart = System.Text.RegularExpressions.Regex.Match(mode, @"\d+").Value;
+                        return int.TryParse(numericPart, out int num) ? num : 0;
+                    }).ToList();
+                    
+                    foreach (var mode in sortedModes)
+                    {
+                        HighEnergyModes.Add(mode);
+                    }
+                    
+                    // If no high energy modes found, add default fallback
+                    if (HighEnergyModes.Count == 0)
+                    {
+                        HighEnergyModes.Add("10X");
+                        HighEnergyModes.Add("15X");
+                        StatusMessage = "Using default high energy modes (none detected on machine)";
+                    }
+                    else
+                    {
+                        StatusMessage = $"Found {HighEnergyModes.Count} high energy modes available on {machineId}";
+                    }
+                    
+                    // Set default selection to first available mode, or 15X if available
+                    if (HighEnergyModes.Contains("15X"))
+                    {
+                        SelectedHighEnergyMode = "15X";
+                    }
+                    else if (HighEnergyModes.Count > 0)
+                    {
+                        SelectedHighEnergyMode = HighEnergyModes.First();
+                    }
+                    
+                }, ex =>
+                {
+                    // Error handling - use default modes
+                    HighEnergyModes.Clear();
+                    HighEnergyModes.Add("10X");
+                    HighEnergyModes.Add("15X");
+                    HighEnergyModes.Add("18X");
+                    HighEnergyModes.Add("23X");
+                    StatusMessage = $"Error detecting machine energy modes: {ex.Message}. Using defaults.";
+                });
+            }
+            catch (Exception ex)
+            {
+                // Fallback to default modes on any error
+                HighEnergyModes.Clear();
+                HighEnergyModes.Add("10X");
+                HighEnergyModes.Add("15X");
+                HighEnergyModes.Add("18X");
+                HighEnergyModes.Add("23X");
+                StatusMessage = $"Error populating energy modes: {ex.Message}. Using defaults.";
+            }
+        }
+        
+        private bool IsHighEnergyMode(string energyMode)
+        {
+            // Consider 10X and above as high energy modes
+            var numericPart = System.Text.RegularExpressions.Regex.Match(energyMode, @"\d+").Value;
+            if (int.TryParse(numericPart, out int energy))
+            {
+                return energy >= 10; // 10X, 15X, 18X, 23X, etc.
+            }
+            return false;
+        }
+        
+        private List<string> GetCommonHighEnergyModes(string machineId)
+        {
+            var modes = new List<string>();
+            
+            // Add common high energy modes based on machine type
+            if (machineId.ToUpper().Contains("TRUEBEAM") || machineId.ToUpper().Contains("CLINAC"))
+            {
+                modes.AddRange(new[] { "10X", "15X", "18X" });
+            }
+            else if (machineId.ToUpper().Contains("EDGE"))
+            {
+                modes.AddRange(new[] { "10X", "15X", "18X" });
+            }
+            else if (machineId.ToUpper().Contains("HALCYON"))
+            {
+                modes.AddRange(new[] { "10X" }); // Halcyon typically has 6X and 10X
+            }
+            else if (machineId.ToUpper().Contains("ETHOS"))
+            {
+                modes.AddRange(new[] { "10X", "15X" });
+            }
+            else
+            {
+                // Generic fallback for unknown machines
+                modes.AddRange(new[] { "10X", "15X", "18X", "23X" });
+            }
+            
+            return modes;
+        }
+
+        /// <summary>
+        /// Public method to refresh available high energy modes (useful when plan or machine changes)
+        /// </summary>
+        public void RefreshAvailableHighEnergyModes()
+        {
+            PopulateAvailableHighEnergyModes();
         }
 
         private void Execute()
@@ -62,7 +262,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 _esapiWorker.ExecuteWithErrorHandling(sc =>
                 {
                     ExecuteBreastFiF(sc);
-                StatusMessage = "BreastFiF completed successfully.";
+                    StatusMessage = "BreastFiF completed successfully.";
                 },
                 ex =>
                 {
@@ -127,12 +327,10 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 return;
             }
 
-
             ExternalBeamTreatmentUnit ebtu = pl.Beams.FirstOrDefault(x => x.Id.ToLower().Contains("med")).TreatmentUnit;
             string machineID = ebtu.Id;//placeholder
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
             //check if the prone is supine or prone
             bool proneFlag = false;
@@ -144,11 +342,11 @@ namespace MAAS_BreastPlan_helper.ViewModels
             else
                 proneConversion = 1;
 
-            // Use the selected subfield count from our ViewModel
-            int subFields = SelectedSubFieldCount + 3; // Convert from 0-3 index to 3-6 value
+            // Calcula os subcampos a partir do índice da interface (0 → 3, 1 → 4, etc.)
+            int subFieldsMed = SelectedSubFieldCountMed + 3;
+            int subFieldsLat = SelectedSubFieldCountLat + 3;
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
             //acessa o numero de laminas
             int nLeafs = pl.Beams.Last().ControlPoints[0].LeafPositions.Length / 2;
@@ -166,42 +364,69 @@ namespace MAAS_BreastPlan_helper.ViewModels
             float[,] LPMed5 = new float[2, nLeafs];//segment 6 med
             float[,] LPLat5 = new float[2, nLeafs];//segment 6 lat
 
-
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+            double[] doseThresholdMed = new double[5];
+            double[] doseThresholdLat = new double[5];
 
-            double[] doseThreshold = new double[5];// dose level of MLC to block against, the max number of segment minus one
-            doseThreshold[0] = 111;//isodose level to block against
-            doseThreshold[1] = 108;
-            doseThreshold[2] = 105;
-            doseThreshold[3] = 102;
-            doseThreshold[4] = 98;
-            switch (subFields)//override threshold based on subfield numbers
+            // Thresholds para MED
+            switch (subFieldsMed)
             {
                 case 3:
-                    doseThreshold[0] = 107;
-                    doseThreshold[1] = 103;
+                    doseThresholdMed[0] = 107;
+                    doseThresholdMed[1] = 103;
                     break;
-
                 case 4:
-                    doseThreshold[0] = 110;
-                    doseThreshold[1] = 105;
-                    doseThreshold[2] = 98;
+                    doseThresholdMed[0] = 110;
+                    doseThresholdMed[1] = 105;
+                    doseThresholdMed[2] = 98;
                     break;
                 case 5:
-                    doseThreshold[0] = 111;
-                    doseThreshold[1] = 107;
-                    doseThreshold[2] = 103;
-                    doseThreshold[3] = 98;
+                    doseThresholdMed[0] = 111;
+                    doseThresholdMed[1] = 107;
+                    doseThresholdMed[2] = 103;
+                    doseThresholdMed[3] = 98;
+                    break;
+                default:
+                    doseThresholdMed[0] = 111;
+                    doseThresholdMed[1] = 108;
+                    doseThresholdMed[2] = 105;
+                    doseThresholdMed[3] = 102;
+                    doseThresholdMed[4] = 98;
+                    break;
+            }
+
+            // Thresholds para LAT (podem ser os mesmos ou adaptados)
+            switch (subFieldsLat)
+            {
+                case 3:
+                    doseThresholdLat[0] = 107;
+                    doseThresholdLat[1] = 103;
+                    break;
+                case 4:
+                    doseThresholdLat[0] = 110;
+                    doseThresholdLat[1] = 105;
+                    doseThresholdLat[2] = 98;
+                    break;
+                case 5:
+                    doseThresholdLat[0] = 111;
+                    doseThresholdLat[1] = 107;
+                    doseThresholdLat[2] = 103;
+                    doseThresholdLat[3] = 98;
+                    break;
+                default:
+                    doseThresholdLat[0] = 111;
+                    doseThresholdLat[1] = 108;
+                    doseThresholdLat[2] = 105;
+                    doseThresholdLat[3] = 102;
+                    doseThresholdLat[4] = 98;
                     break;
             }
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
             //define os limites do mlc a partir de sua identificacao           
             var mlc = pl.Beams.FirstOrDefault(x => x.Id.ToLower().Contains("med"))?.MLC.Model;
-
 
             double[] boundary = new double[nLeafs + 1];
 
@@ -224,7 +449,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 MessageBox.Show("The MLC wasn't found.");
             }
 
-
             double mMUinitial = 150, lMUinitial = 150;//tentative set to 150
 
             List<double> centroidM = new List<double>();
@@ -237,9 +461,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             LPMed = pl.Beams.FirstOrDefault(x => x.Id.ToLower().Contains("med")).ControlPoints[0].LeafPositions;
             LPLat = pl.Beams.FirstOrDefault(x => x.Id.ToLower().Contains("lat")).ControlPoints[0].LeafPositions;
 
-
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
             //Start patient modification
             pt.BeginModifications();
@@ -270,6 +492,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             double maxDose = pl.Dose.DoseMax3D.Dose;
             pl.PlanNormalizationValue = 100 * maxDose / 115;//this is in percentage; normalize to 115% max dose
+
             //incorportate MU to balance field weight
             for (int u = 0; u < pl.Beams.Count(); u++)
             {
@@ -278,7 +501,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 if (Regex.Match(ib.Id.ToLower(), "med").Success)//Med beam
                 {
                     mMUinitial = ib.Meterset.Value;
-
                 }
                 else if (Regex.Match(ib.Id.ToLower(), "lat").Success)//Lat beam
                 {
@@ -320,14 +542,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 editables = newLat.GetEditableParameters();
                 editables.SetAllLeafPositions(originalLat.ControlPoints[0].LeafPositions);
                 newLat.ApplyParameters(editables);
-
             }
             else
             {
                 newMed = newPlan.AddMLCBeam(beamPara, LPMed, originalMed.ControlPoints[0].JawPositions, originalMed.ControlPoints[0].CollimatorAngle, originalMed.ControlPoints[0].GantryAngle, originalMed.ControlPoints[0].PatientSupportAngle, originalMed.IsocenterPosition);
                 newLat = newPlan.AddMLCBeam(beamPara, LPLat, originalLat.ControlPoints[0].JawPositions, originalLat.ControlPoints[0].CollimatorAngle, originalLat.ControlPoints[0].GantryAngle, originalLat.ControlPoints[0].PatientSupportAngle, originalLat.IsocenterPosition);
             }
-
 
             newMed.Id = "1 MED";
             newLat.Id = "2 LAT";
@@ -339,6 +559,75 @@ namespace MAAS_BreastPlan_helper.ViewModels
             double meanCentroidM = centroidM.Average();
             double meanCentroidL = centroidL.Average();
             double latCorrection = Math.Pow(meanCentroidL / meanCentroidM, 2) * mMUinitial / lMUinitial;
+
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            ///// High energy beam support - Proper weight distribution
+
+            // Calculate weight contributions that sum to 100%
+            double highEnergyContribution = HighEnergyFlag ? HighEnergyLevel * 0.05 : 0.0; // Ex: level 3 → 15%
+            double lowEnergyContribution = 1.0 - highEnergyContribution; // Remaining percentage for low energy
+
+            // Individual beam weights (each beam type gets half of its energy contribution)
+            double highEnergyMedWeight = highEnergyContribution * 0.5;
+            double highEnergyLatWeight = highEnergyContribution * 0.5 * latCorrection;
+            double lowEnergyMedWeight = lowEnergyContribution * 0.5;
+            double lowEnergyLatWeight = lowEnergyContribution * 0.5 * latCorrection;
+
+            // Rebalance factor for subfields (same logic as before, but applied to proper weights)
+            double subFieldWeightRebalance = HighEnergyFlag ? 1.0 / lowEnergyContribution : 1.0;
+
+            // Display weight distribution for user feedback
+            if (HighEnergyFlag)
+            {
+                StatusMessage = $"Weight Distribution: High Energy {highEnergyContribution:P1} ({SelectedHighEnergyMode}), Low Energy {lowEnergyContribution:P1} (6X) | " +
+                               $"MED Weights: HE={highEnergyMedWeight:F3}, LE={lowEnergyMedWeight:F3} | " +
+                               $"LAT Weights: HE={highEnergyLatWeight:F3}, LE={lowEnergyLatWeight:F3}";
+            }
+            else
+            {
+                StatusMessage = "Weight Distribution: 100% Low Energy (6X) | " +
+                               $"MED Weight: {lowEnergyMedWeight:F3}, LAT Weight: {lowEnergyLatWeight:F3}";
+            }
+
+            Beam newMed15 = null;
+            Beam newLat15 = null;
+
+            if (HighEnergyFlag)
+            {
+                var beamPara15X = new ExternalBeamMachineParameters(machineID, SelectedHighEnergyMode, doserate, technique, primaryFluenceMode);
+
+                newMed15 = newPlan.AddMLCBeam(
+                    beamPara15X,
+                    LPMed,
+                    originalMed.ControlPoints[0].JawPositions,
+                    originalMed.ControlPoints[0].CollimatorAngle,
+                    originalMed.ControlPoints[0].GantryAngle,
+                    originalMed.ControlPoints[0].PatientSupportAngle,
+                    originalMed.IsocenterPosition
+                );
+                newMed15.Id = $"1A MED {SelectedHighEnergyMode}";
+
+                newLat15 = newPlan.AddMLCBeam(
+                    beamPara15X,
+                    LPLat,
+                    originalLat.ControlPoints[0].JawPositions,
+                    originalLat.ControlPoints[0].CollimatorAngle,
+                    originalLat.ControlPoints[0].GantryAngle,
+                    originalLat.ControlPoints[0].PatientSupportAngle,
+                    originalLat.IsocenterPosition
+                );
+                newLat15.Id = $"2A LAT {SelectedHighEnergyMode}";
+
+                // Apply correct high energy beam weights
+                var med15Params = newMed15.GetEditableParameters();
+                med15Params.WeightFactor = highEnergyMedWeight;
+                newMed15.ApplyParameters(med15Params);
+
+                var lat15Params = newLat15.GetEditableParameters();
+                lat15Params.WeightFactor = highEnergyLatWeight;
+                newLat15.ApplyParameters(lat15Params);
+            }
+
             for (int u = 0; u < newPlan.Beams.Count(); u++)
             {
                 Beam ib = newPlan.Beams.ElementAt(u);
@@ -346,24 +635,34 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 //Med beam, identified by string "med" in the plan name
                 if (Regex.Match(ib.Id.ToLower(), "med").Success)//Med beam
                 {
-                    med0 = ib;
-                    VMS.TPS.Common.Model.API.BeamParameters med0BeamParameter = med0.GetEditableParameters();
-                    med0BeamParameter.WeightFactor = 0.5;
-                    med0.ApplyParameters(med0BeamParameter);
+                    // Skip high energy beams (they already have correct weights)
+                    if (!ib.Id.Contains(SelectedHighEnergyMode))
+                    {
+                        med0 = ib;
+                        VMS.TPS.Common.Model.API.BeamParameters med0BeamParameter = med0.GetEditableParameters();
+                        med0BeamParameter.WeightFactor = lowEnergyMedWeight;
+                        med0.ApplyParameters(med0BeamParameter);
+                    }
                 }
                 else if (Regex.Match(ib.Id.ToLower(), "lat").Success)//Lat beam
                 {
-                    lat0 = ib;
-                    VMS.TPS.Common.Model.API.BeamParameters lat0BeamParameter = lat0.GetEditableParameters();
-                    lat0BeamParameter.WeightFactor = 0.5 * latCorrection; // apply lateral correction
-                    lat0.ApplyParameters(lat0BeamParameter);
+                    // Skip high energy beams (they already have correct weights)
+                    if (!ib.Id.Contains(SelectedHighEnergyMode))
+                    {
+                        lat0 = ib;
+                        VMS.TPS.Common.Model.API.BeamParameters lat0BeamParameter = lat0.GetEditableParameters();
+                        lat0BeamParameter.WeightFactor = lowEnergyLatWeight; // apply corrected low energy weight
+                        lat0.ApplyParameters(lat0BeamParameter);
+                    }
                 }
             }
 
             newPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, plExt.PhotonCalculationModel);
             newPlan.CalculateDose();// calculate dose to assess initial dose distribution
             maxDose = newPlan.Dose.DoseMax3D.Dose;
-            newPlan.PlanNormalizationValue = 100 * maxDose / 115;//this is in percentage; normalize to 115% max dose
+
+            double normGoal = HighEnergyFlag ? 109 : 115;
+            newPlan.PlanNormalizationValue = 100 * maxDose / normGoal;//this is in percentage; normalize to 115% or 109% max dose
 
             Dose dPlan = newPlan.Dose;
             for (int i = 0; i < 2; i++)
@@ -408,15 +707,26 @@ namespace MAAS_BreastPlan_helper.ViewModels
             double med_int_x = -((med_sizex / 2 - 1) * 2.5 + 2.5 / 2);
             double med_int_y = (med_sizey / 2 - 1) * 2.5 + 2.5 / 2;
 
+            //sampling size
+            double lat_sizex = 2 * Convert.ToInt32(Math.Max(Math.Abs(lat_x1), Math.Abs(lat_x2)) / 2.5 + 16);//corresponds to 4 cm black area
+            double lat_sizey = 2 * Convert.ToInt32(Math.Max(Math.Abs(lat_y1), Math.Abs(lat_y2)) / 2.5 + 16);//corresponds to 4 cm black area
+            //sampling origin
+            double lat_int_x = -((lat_sizex / 2 - 1) * 2.5 + 2.5 / 2);
+            double lat_int_y = (lat_sizey / 2 - 1) * 2.5 + 2.5 / 2;
 
             ////add segment MLC Med beam
+            BeamProcessor.AdjustMLCSegmentMed(LPMed1, LPMed, 0, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThresholdMed, Rside);
+            BeamProcessor.AdjustMLCSegmentMed(LPMed2, LPMed, 1, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThresholdMed, Rside);
+            BeamProcessor.AdjustMLCSegmentMed(LPMed3, LPMed, 2, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThresholdMed, Rside);
+            BeamProcessor.AdjustMLCSegmentMed(LPMed4, LPMed, 3, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThresholdMed, Rside);
+            BeamProcessor.AdjustMLCSegmentMed(LPMed5, LPMed, 4, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThresholdMed, Rside);
 
-            BeamProcessor.AdjustMLCSegmentMed(LPMed1, LPMed, 0, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThreshold, Rside);
-            BeamProcessor.AdjustMLCSegmentMed(LPMed2, LPMed, 1, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThreshold, Rside);
-            BeamProcessor.AdjustMLCSegmentMed(LPMed3, LPMed, 2, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThreshold, Rside);
-            BeamProcessor.AdjustMLCSegmentMed(LPMed4, LPMed, 3, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThreshold, Rside);
-            BeamProcessor.AdjustMLCSegmentMed(LPMed5, LPMed, 4, nLeafs, boundary, med_y1, med_y2, med_int_y, med_int_x, doseM, doseThreshold, Rside);
-
+            //add segment MLC Lat beam - use opposite side from medial beam (!Rside)
+            BeamProcessor.AdjustMLCSegment(LPLat1, LPLat, 0, nLeafs, boundary, lat_y1, lat_y2, lat_int_y, lat_int_x, doseL, doseThresholdLat, !Rside);
+            BeamProcessor.AdjustMLCSegment(LPLat2, LPLat, 1, nLeafs, boundary, lat_y1, lat_y2, lat_int_y, lat_int_x, doseL, doseThresholdLat, !Rside);
+            BeamProcessor.AdjustMLCSegment(LPLat3, LPLat, 2, nLeafs, boundary, lat_y1, lat_y2, lat_int_y, lat_int_x, doseL, doseThresholdLat, !Rside);
+            BeamProcessor.AdjustMLCSegment(LPLat4, LPLat, 3, nLeafs, boundary, lat_y1, lat_y2, lat_int_y, lat_int_x, doseL, doseThresholdLat, !Rside);
+            BeamProcessor.AdjustMLCSegment(LPLat5, LPLat, 4, nLeafs, boundary, lat_y1, lat_y2, lat_int_y, lat_int_x, doseL, doseThresholdLat, !Rside);
 
             /////////////////////////////////////
             /////smooth MLC
@@ -424,66 +734,39 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             if (Rside)
             {
+                // Medial beam - smooth from side 0 (left bank)
                 BeamProcessor.SmoothMLCSegment(LPMed1, 0, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed2, 0, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed3, 0, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed4, 0, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed5, 0, nLeafs);
+
+                // Lateral beam - smooth from opposite side (side 1 for !Rside=false, meaning right bank)
+                BeamProcessor.NewSmoothMLCSegment(LPLat1, 1, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat2, 1, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat3, 1, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat4, 1, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat5, 1, nLeafs);
             }
             else // Left side
             {
+                // Medial beam - smooth from side 1 (right bank)
                 BeamProcessor.SmoothMLCSegment(LPMed1, 1, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed2, 1, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed3, 1, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed4, 1, nLeafs);
                 BeamProcessor.SmoothMLCSegment(LPMed5, 1, nLeafs);
+
+                // Lateral beam - smooth from opposite side (side 0 for !Rside=true, meaning left bank)
+                BeamProcessor.NewSmoothMLCSegment(LPLat1, 0, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat2, 0, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat3, 0, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat4, 0, nLeafs);
+                BeamProcessor.NewSmoothMLCSegment(LPLat5, 0, nLeafs);
             }
-
-
-            ////mirror lat beam MLC from MED
-            for (int i = 0; i < nLeafs; i++)
-            {
-                LPLat1[0, i] = (-1) * LPMed1[1, i];
-                LPLat1[1, i] = (-1) * LPMed1[0, i];
-                LPLat2[0, i] = (-1) * LPMed2[1, i];
-                LPLat2[1, i] = (-1) * LPMed2[0, i];
-                LPLat3[0, i] = (-1) * LPMed3[1, i];
-                LPLat3[1, i] = (-1) * LPMed3[0, i];
-                LPLat4[0, i] = (-1) * LPMed4[1, i];
-                LPLat4[1, i] = (-1) * LPMed4[0, i];
-                LPLat5[0, i] = (-1) * LPMed5[1, i];
-                LPLat5[1, i] = (-1) * LPMed5[0, i];
-            }
-
 
             //post process lateral field MLC from mirroring med due to field size difference
             bool isHal = machineID.ToLower().Contains("hal") || machineID.ToLower().Contains("rds");
-
-            if (!isHal)
-            {
-                int activeRowLat1Y1 = BeamProcessor.FindActiveRow(LPLat1, nLeafs, true);
-                int activeRowLat2Y1 = BeamProcessor.FindActiveRow(LPLat2, nLeafs, true);
-                int activeRowLat3Y1 = BeamProcessor.FindActiveRow(LPLat3, nLeafs, true);
-                int activeRowLat4Y1 = BeamProcessor.FindActiveRow(LPLat4, nLeafs, true);
-                int activeRowLat5Y1 = BeamProcessor.FindActiveRow(LPLat5, nLeafs, true);
-
-                int activeRowLat1Y2 = BeamProcessor.FindActiveRow(LPLat1, nLeafs, false);
-                int activeRowLat2Y2 = BeamProcessor.FindActiveRow(LPLat2, nLeafs, false);
-                int activeRowLat3Y2 = BeamProcessor.FindActiveRow(LPLat3, nLeafs, false);
-                int activeRowLat4Y2 = BeamProcessor.FindActiveRow(LPLat4, nLeafs, false);
-                int activeRowLat5Y2 = BeamProcessor.FindActiveRow(LPLat5, nLeafs, false);
-
-
-                //extend open MLC
-                BeamProcessor.ExtendOpenMLC(LPLat1, nLeafs, boundary, lat_y1, lat_y2, activeRowLat1Y1, activeRowLat1Y2);
-                BeamProcessor.ExtendOpenMLC(LPLat2, nLeafs, boundary, lat_y1, lat_y2, activeRowLat2Y1, activeRowLat2Y2);
-                BeamProcessor.ExtendOpenMLC(LPLat3, nLeafs, boundary, lat_y1, lat_y2, activeRowLat3Y1, activeRowLat3Y2);
-                BeamProcessor.ExtendOpenMLC(LPLat4, nLeafs, boundary, lat_y1, lat_y2, activeRowLat4Y1, activeRowLat4Y2);
-                BeamProcessor.ExtendOpenMLC(LPLat5, nLeafs, boundary, lat_y1, lat_y2, activeRowLat5Y1, activeRowLat5Y2);
-            }
-
-            //BeamParameters med1BeamParameter, lat1BeamParameter, med2BeamParameter, lat2BeamParameter, med3BeamParameter, lat3BeamParameter, med4BeamParameter, lat4BeamParameter, med5BeamParameter, lat5BeamParameter;
-            double subFieldWeight = 0.015;
 
             // Arrays de referência para os feixes
             float[][,] LPMedTot = { LPMed1, LPMed2, LPMed3, LPMed4, LPMed5 };
@@ -496,36 +779,60 @@ namespace MAAS_BreastPlan_helper.ViewModels
             double colAngleLat = originalLat.ControlPoints[0].CollimatorAngle, gantryAngleLat = originalLat.ControlPoints[0].GantryAngle, psaAngleLat = originalLat.ControlPoints[0].PatientSupportAngle;
             VVector iso = originalMed.IsocenterPosition;
 
-            switch (subFields)
-            {
-                case 3:
-                    subFieldWeight = 0.035;
-                    BeamProcessor.CreateBeams(newPlan, 2, beamPara, LPMedTot, LPLatTot, jawsPositionMed, jawsPositionLat,
-                                colAngleMed, colAngleLat, gantryAngleMed, gantryAngleLat, psaAngleMed,
-                                psaAngleLat, iso, subFieldWeight, latCorrection, isHal);
-                    break;
+            // Ajuste do peso conforme número de subcampos
+            double subFieldWeightMed = 0.015;
+            double subFieldWeightLat = 0.015;
 
-                case 4:
-                    subFieldWeight = 0.025;
-                    BeamProcessor.CreateBeams(newPlan, 3, beamPara, LPMedTot, LPLatTot, jawsPositionMed, jawsPositionLat,
-                                colAngleMed, colAngleLat, gantryAngleMed, gantryAngleLat, psaAngleMed,
-                                psaAngleLat, iso, subFieldWeight, latCorrection, isHal);
-                    break;
+            if (subFieldsMed == 6) subFieldWeightMed = 0.015;
+            else if (subFieldsMed == 5) subFieldWeightMed = 0.018;
+            else if (subFieldsMed == 4) subFieldWeightMed = 0.025;
+            else if (subFieldsMed == 3) subFieldWeightMed = 0.035;
 
-                case 5:
-                    subFieldWeight = 0.018;
-                    BeamProcessor.CreateBeams(newPlan, 4, beamPara, LPMedTot, LPLatTot, jawsPositionMed, jawsPositionLat,
-                                colAngleMed, colAngleLat, gantryAngleMed, gantryAngleLat, psaAngleMed,
-                                psaAngleLat, iso, subFieldWeight, latCorrection, isHal);
-                    break;
+            if (subFieldsLat == 6) subFieldWeightLat = 0.015;
+            else if (subFieldsLat == 5) subFieldWeightLat = 0.018;
+            else if (subFieldsLat == 4) subFieldWeightLat = 0.025;
+            else if (subFieldsLat == 3) subFieldWeightLat = 0.035;
 
-                case 6:
-                    subFieldWeight = 0.015;
-                    BeamProcessor.CreateBeams(newPlan, 5, beamPara, LPMedTot, LPLatTot, jawsPositionMed, jawsPositionLat,
-                                colAngleMed, colAngleLat, gantryAngleMed, gantryAngleLat, psaAngleMed,
-                                psaAngleLat, iso, subFieldWeight, latCorrection, isHal);
-                    break;
-            }
+            //criacao dos campos
+            BeamProcessor.CreateBeams(
+                newPlan,
+                subFieldsMed - 1, // nº de segmentos
+                beamPara,
+                LPMedTot,
+                null, // sem LAT
+                jawsPositionMed,
+                jawsPositionLat,
+                colAngleMed,
+                colAngleLat,
+                gantryAngleMed,
+                gantryAngleLat,
+                psaAngleMed,
+                psaAngleLat,
+                iso,
+                subFieldWeightMed * subFieldWeightRebalance,
+                latCorrection,
+                isHal
+            );
+
+            BeamProcessor.CreateBeams(
+                newPlan,
+                subFieldsLat - 1,
+                beamPara,
+                null, // sem MED
+                LPLatTot,
+                jawsPositionMed,
+                jawsPositionLat,
+                colAngleMed,
+                colAngleLat,
+                gantryAngleMed,
+                gantryAngleLat,
+                psaAngleMed,
+                psaAngleLat,
+                iso,
+                subFieldWeightLat * subFieldWeightRebalance,
+                latCorrection,
+                isHal
+            );
 
             //final configs
             newPlan.SetPrescription(plExt.NumberOfFractions == null ? 25 : plExt.NumberOfFractions.Value, plExt.DosePerFraction, plExt.TreatmentPercentage);
@@ -640,7 +947,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 double colAngleMed, gantryAngleMed, psaAngleMed;
                 double colAngleLat, gantryAngleLat, psaAngleLat;
                 VVector iso;
-
 
                 foreach (Beam beam in pl.Beams)
                 {
@@ -804,7 +1110,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 VVector source = beam.GetSourceLocation(gantryAngle);
                 VVector beamIso = beam.IsocenterPosition;
 
-
                 for (int i = 0; i < sizeY; i++)
                 {
                     double[] dose = new double[sizeX];
@@ -827,6 +1132,136 @@ namespace MAAS_BreastPlan_helper.ViewModels
                         dose[j] = doseTracing(ray, source, body, ct, dPlan);
                     }
                     doseList.Add(dose);
+                }
+            }
+            public static void AdjustMLCSegment(float[,] lpTarget, float[,] lpBase, int segmentIndex, int nLeafs, double[] boundary, double y1, double y2, double int_y,
+            double int_x, List<double[]> doseMap, double[] doseThreshold, bool Rside)
+            {
+                for (int i = 0; i < nLeafs; i++)
+                {
+                    double yCoor = (boundary[i] + boundary[i + 1]) / 2;
+
+                    if (yCoor < y1 || yCoor > y2)
+                        continue;
+
+                    int rowIdx = (int)Math.Round((int_y - yCoor) / 2.5);
+                    int leftIdx, rightIdx;
+                    int bodyLeftIdx = 1, bodyRightIdx = doseMap[0].Count();
+
+                    double[] tmpDose = new double[doseMap[rowIdx].Count()];
+                    for (int j = 0; j < doseMap[0].Count(); j++)
+                    {
+                        tmpDose[j] = doseMap[rowIdx][j];
+                    }
+
+                    for (int j = 0; j < doseMap[0].Count(); j++)
+                    {
+                        if (tmpDose[j] > 25)
+                        {
+                            bodyLeftIdx = j;
+                            break;
+                        }
+                    }
+
+                    for (int j = doseMap[0].Count() - 1; j >= 0; j--)
+                    {
+                        if (tmpDose[j] > 25)
+                        {
+                            bodyRightIdx = j;
+                            break;
+                        }
+                    }
+
+                    if (tmpDose.Max() < doseThreshold[segmentIndex] && bodyLeftIdx != 1 && bodyRightIdx != doseMap[0].Count())
+                    {
+                        if (Rside)
+                        {
+                            lpTarget[0, i] = (float)(int_x + bodyLeftIdx * 2.5);
+                            lpTarget[1, i] = lpBase[1, i];
+                        }
+                        else
+                        {
+                            lpTarget[0, i] = lpBase[0, i];
+                            lpTarget[1, i] = (float)(int_x + bodyRightIdx * 2.5);
+                        }
+                        continue;
+                    }
+
+                    if (tmpDose.Max() >= doseThreshold[segmentIndex])
+                    {
+                        if (Rside)
+                        {
+                            if (segmentIndex == 0)
+                            {
+                                for (int j = 0; j < doseMap[0].Count() - 1; j++)
+                                {
+                                    if (doseMap[rowIdx][j] >= doseThreshold[segmentIndex])
+                                    {
+                                        for (int k = j; k < doseMap[0].Count() - 1; k++)
+                                        {
+                                            if (doseMap[rowIdx][k] < doseThreshold[segmentIndex])
+                                            {
+                                                rightIdx = k;
+                                                lpTarget[0, i] = (float)(int_x + rightIdx * 2.5);
+                                                lpTarget[1, i] = lpBase[1, i];
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int j = doseMap[0].Count() - 1; j > 0; j--)
+                                {
+                                    if (doseMap[rowIdx][j] >= doseThreshold[segmentIndex])
+                                    {
+                                        rightIdx = j;
+                                        lpTarget[0, i] = (float)(int_x + rightIdx * 2.5);
+                                        lpTarget[1, i] = lpBase[1, i];
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (segmentIndex == 0)
+                            {
+                                for (int j = doseMap[0].Count() - 1; j > 0; j--)
+                                {
+                                    if (doseMap[rowIdx][j] >= doseThreshold[segmentIndex])
+                                    {
+                                        for (int k = j; k > 0; k--)
+                                        {
+                                            if (doseMap[rowIdx][k] < doseThreshold[segmentIndex])
+                                            {
+                                                leftIdx = k;
+                                                lpTarget[0, i] = lpBase[0, i];
+                                                lpTarget[1, i] = (float)(int_x + leftIdx * 2.5);
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int j = 0; j < doseMap[0].Count() - 1; j++)
+                                {
+                                    if (doseMap[rowIdx][j] >= doseThreshold[segmentIndex])
+                                    {
+                                        leftIdx = j;
+                                        lpTarget[0, i] = lpBase[0, i];
+                                        lpTarget[1, i] = (float)(int_x + leftIdx * 2.5);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             public static void AdjustMLCSegmentMed(float[,] LPMed, float[,] LPMedBase, int segmentIndex, int nLeafs, double[] boundary, double med_y1, double med_y2,
@@ -958,6 +1393,36 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     }
                 }
             }
+            public static void NewSmoothMLCSegment(float[,] lpSegment, int leafBankIndex, int nLeafs)
+            {
+                float[] mlcBuffer = new float[nLeafs];
+
+                // Copia os valores da folha (linha) especificada para um buffer
+                for (int i = 0; i < nLeafs; i++)
+                    mlcBuffer[i] = lpSegment[leafBankIndex, i];
+
+                // Aplica suavização com janela de 5 posições (2 para cada lado)
+                for (int i = 2; i < nLeafs - 2; i++)
+                {
+                    if (mlcBuffer[i] == 0)
+                        continue;
+
+                    int smoothCount = 0;
+                    float smoothSum = 0;
+
+                    for (int j = i - 2; j <= i + 2; j++)
+                    {
+                        if (mlcBuffer[j] != 0)
+                        {
+                            smoothSum += mlcBuffer[j];
+                            smoothCount++;
+                        }
+                    }
+
+                    lpSegment[leafBankIndex, i] = smoothSum / smoothCount;
+                }
+            }
+
             public static void SmoothMLCSegment(float[,] LPMed, int segmentIndex, int nLeafs)
             {
                 float[] mlcBuffer = new float[nLeafs];
@@ -1049,58 +1514,66 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 {
                     if (isHal)
                     {
-                        try
+                        if (LPMed != null)
                         {
-                            //adiciona os campos do hal
-                            medBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleMed, gantryAngleMed, iso);
-                            medBeams[i].RemoveFlatteningSequence();
+                            try
+                            {
+                                //adiciona os campos do hal
+                                medBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleMed, gantryAngleMed, iso);
+                                medBeams[i].RemoveFlatteningSequence();
 
-                            //seta as lps a posteriori
-                            var editables = medBeams[i].GetEditableParameters();
-                            editables.WeightFactor = subFieldWeight;
-                            medBeams[i].ApplyParameters(editables);
-                            editables.SetAllLeafPositions(LPMed[i]);
-                            medBeams[i].ApplyParameters(editables);
-
+                                //seta as lps a posteriori
+                                var editables = medBeams[i].GetEditableParameters();
+                                editables.WeightFactor = subFieldWeight;
+                                medBeams[i].ApplyParameters(editables);
+                                editables.SetAllLeafPositions(LPMed[i]);
+                                medBeams[i].ApplyParameters(editables);
+                            }
+                            catch { }
                         }
-                        catch { }
-                        try
+                        if (LPLat != null)
                         {
-                            //adiciona os campos do hal
-                            latBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleLat, gantryAngleLat, iso);
-                            latBeams[i].RemoveFlatteningSequence();
+                            try
+                            {
+                                //adiciona os campos do hal
+                                latBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleLat, gantryAngleLat, iso);
+                                latBeams[i].RemoveFlatteningSequence();
 
-                            //seta as lps a posteriori
-                            var editables = latBeams[i].GetEditableParameters();
-                            editables.WeightFactor = subFieldWeight * latCorrection;
-                            latBeams[i].ApplyParameters(editables);
-                            editables.SetAllLeafPositions(LPLat[i]);
-                            latBeams[i].ApplyParameters(editables);
-
+                                //seta as lps a posteriori
+                                var editables = latBeams[i].GetEditableParameters();
+                                editables.WeightFactor = subFieldWeight * latCorrection;
+                                latBeams[i].ApplyParameters(editables);
+                                editables.SetAllLeafPositions(LPLat[i]);
+                                latBeams[i].ApplyParameters(editables);
+                            }
+                            catch { }
                         }
-                        catch { }
                     }
                     else
                     {
-                        medBeams[i] = newPlan.AddMLCBeam(beamPara, LPMed[i], jawsPositionMed, colAngleMed, gantryAngleMed, psaAngleMed, iso);
-                        latBeams[i] = newPlan.AddMLCBeam(beamPara, LPLat[i], jawsPositionLat, colAngleLat, gantryAngleLat, psaAngleLat, iso);
+                        if (LPMed != null)
+                        {
+                            medBeams[i] = newPlan.AddMLCBeam(beamPara, LPMed[i], jawsPositionMed, colAngleMed, gantryAngleMed, psaAngleMed, iso);
 
-                        // Obter e ajustar parâmetros do feixe
-                        medBeamParams[i] = medBeams[i].GetEditableParameters();
-                        medBeamParams[i].WeightFactor = subFieldWeight;
+                            // Obter e ajustar parâmetros do feixe
+                            medBeamParams[i] = medBeams[i].GetEditableParameters();
+                            medBeamParams[i].WeightFactor = subFieldWeight;
 
-                        latBeamParams[i] = latBeams[i].GetEditableParameters();
-                        latBeamParams[i].WeightFactor = subFieldWeight * latCorrection;
+                            // Aplicar parâmetros ajustados
+                            medBeams[i].ApplyParameters(medBeamParams[i]);
+                        }
+                        if (LPLat != null)
+                        {
+                            latBeams[i] = newPlan.AddMLCBeam(beamPara, LPLat[i], jawsPositionLat, colAngleLat, gantryAngleLat, psaAngleLat, iso);
 
-                        // Aplicar parâmetros ajustados
-                        medBeams[i].ApplyParameters(medBeamParams[i]);
-                        latBeams[i].ApplyParameters(latBeamParams[i]);
+                            latBeamParams[i] = latBeams[i].GetEditableParameters();
+                            latBeamParams[i].WeightFactor = subFieldWeight * latCorrection;
+
+                            latBeams[i].ApplyParameters(latBeamParams[i]);
+                        }
                     }
-
                 }
             }
-
-
         }
 
         //convert the coordinate in BEV to the coordinate in CT 3D
