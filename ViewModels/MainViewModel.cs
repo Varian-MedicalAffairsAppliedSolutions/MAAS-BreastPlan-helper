@@ -117,7 +117,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 }
                 else if (tabName == "BreastFiF")
                 {
-                    StatusMessage = "Breast Field-in-Field tab loaded.";
+                    BreastFiFViewModel.RefreshAvailableHighEnergyModes();
+                    StatusMessage = "Breast Field-in-Field tab loaded - energy modes refreshed.";
                 }
                 else if (tabName == "EthosBeamDialog")
                 {
@@ -137,6 +138,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 // Force refresh all ViewModels that store structure references
                 FluenceExtensionViewModel.RefreshData();
                 TangentPlacementViewModel.RefreshData();
+                BreastFiFViewModel.RefreshAvailableHighEnergyModes();
                 // Note: We don't refresh Auto3dSlidingWindowViewModel as it just completed its operation
                 
                 StatusMessage = "All ViewModels refreshed after plan creation.";

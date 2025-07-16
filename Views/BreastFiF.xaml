@@ -32,22 +32,138 @@
                 </StackPanel>
             </GroupBox>
             
-            <!-- Number of Subfields -->
+            <!-- Subfield Configuration -->
             <GroupBox Header="Subfield Configuration" Margin="5" Style="{x:Null}">
                 <StackPanel Margin="5">
-                    <TextBlock Text="Select the number of subfields:" 
+                    <TextBlock Text="Configure subfields independently for each beam:" 
                                FontWeight="Bold" 
-                               Margin="0,0,0,5" 
+                               Margin="0,0,0,10" 
                                Style="{x:Null}" />
                     
-                    <ComboBox Margin="0,0,0,10" 
-                              SelectedIndex="{Binding SelectedSubFieldCount}"
-                              Style="{x:Null}">
-                        <ComboBoxItem Content="3 Subfields" />
-                        <ComboBoxItem Content="4 Subfields" />
-                        <ComboBoxItem Content="5 Subfields" />
-                        <ComboBoxItem Content="6 Subfields" />
-                    </ComboBox>
+                    <!-- Medial Beam Subfields -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Text="MED Subfields:" 
+                                   Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Style="{x:Null}" />
+                        
+                        <ComboBox Grid.Column="1" 
+                                  SelectedIndex="{Binding SelectedSubFieldCountMed}"
+                                  Style="{x:Null}">
+                            <ComboBoxItem Content="3 Subfields" />
+                            <ComboBoxItem Content="4 Subfields" />
+                            <ComboBoxItem Content="5 Subfields" />
+                            <ComboBoxItem Content="6 Subfields" />
+                        </ComboBox>
+                    </Grid>
+                    
+                    <!-- Lateral Beam Subfields -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Text="LAT Subfields:" 
+                                   Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Style="{x:Null}" />
+                        
+                        <ComboBox Grid.Column="1" 
+                                  SelectedIndex="{Binding SelectedSubFieldCountLat}"
+                                  Style="{x:Null}">
+                            <ComboBoxItem Content="3 Subfields" />
+                            <ComboBoxItem Content="4 Subfields" />
+                            <ComboBoxItem Content="5 Subfields" />
+                            <ComboBoxItem Content="6 Subfields" />
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+            
+            <!-- High Energy Beam Configuration -->
+            <GroupBox Header="High Energy Beam Configuration" Margin="5" Style="{x:Null}">
+                <StackPanel Margin="5">
+                    <CheckBox Content="Enable High Energy Beams" 
+                              IsChecked="{Binding HighEnergyFlag}"
+                              FontWeight="SemiBold"
+                              Margin="0,0,0,10"
+                              Style="{x:Null}" />
+                    
+                    <StackPanel IsEnabled="{Binding HighEnergyFlag}" Margin="10,0,0,0">
+                        <!-- Energy Mode Selection -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Text="Energy Mode:" 
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Style="{x:Null}" />
+                            
+                            <ComboBox Grid.Column="1" 
+                                      ItemsSource="{Binding HighEnergyModes}"
+                                      SelectedItem="{Binding SelectedHighEnergyMode}"
+                                      ToolTip="Select the high energy mode available on your treatment machine"
+                                      Style="{x:Null}" />
+                        </Grid>
+                        
+                        <TextBlock TextWrapping="Wrap" 
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   Margin="0,0,0,10"
+                                   Style="{x:Null}">
+                            <Run Text="Note: Select the high energy mode that is available on your Eclipse system and treatment machine." />
+                        </TextBlock>
+                        
+                        <TextBlock Text="High Energy Contribution Level:" 
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,5"
+                                   Style="{x:Null}" />
+                        
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="60" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <Slider Grid.Column="0"
+                                    Minimum="1" 
+                                    Maximum="5" 
+                                    Value="{Binding HighEnergyLevel}"
+                                    TickFrequency="1"
+                                    TickPlacement="BottomRight"
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Style="{x:Null}" />
+                            
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding HighEnergyLevel}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       FontWeight="Bold"
+                                       FontSize="14"
+                                       Style="{x:Null}" />
+                        </Grid>
+                        
+                        <TextBlock TextWrapping="Wrap" 
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   Margin="0,0,0,10"
+                                   Style="{x:Null}">
+                            <Run Text="Level 1 = 5% contribution, Level 2 = 10%, Level 3 = 15%, Level 4 = 20%, Level 5 = 25%" />
+                        </TextBlock>
+                    </StackPanel>
                 </StackPanel>
             </GroupBox>
             
