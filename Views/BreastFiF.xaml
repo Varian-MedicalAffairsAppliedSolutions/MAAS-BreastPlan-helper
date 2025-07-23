@@ -78,12 +78,12 @@
                         
                         <ComboBox Grid.Column="1" 
                                   SelectedIndex="{Binding SelectedSubFieldCountLat}"
-                                  Style="{x:Null}">
-                            <ComboBoxItem Content="3 Subfields" />
-                            <ComboBoxItem Content="4 Subfields" />
-                            <ComboBoxItem Content="5 Subfields" />
-                            <ComboBoxItem Content="6 Subfields" />
-                        </ComboBox>
+                              Style="{x:Null}">
+                        <ComboBoxItem Content="3 Subfields" />
+                        <ComboBoxItem Content="4 Subfields" />
+                        <ComboBoxItem Content="5 Subfields" />
+                        <ComboBoxItem Content="6 Subfields" />
+                    </ComboBox>
                     </Grid>
                 </StackPanel>
             </GroupBox>

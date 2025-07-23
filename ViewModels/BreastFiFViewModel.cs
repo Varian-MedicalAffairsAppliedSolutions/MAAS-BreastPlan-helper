@@ -32,7 +32,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
             get { return _statusMessage; }
             set { SetProperty(ref _statusMessage, value); }
         }
-
+        
         private int _selectedSubFieldCountMed = 2;
         public int SelectedSubFieldCountMed
         {
@@ -262,7 +262,7 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 _esapiWorker.ExecuteWithErrorHandling(sc =>
                 {
                     ExecuteBreastFiF(sc);
-                    StatusMessage = "BreastFiF completed successfully.";
+                StatusMessage = "BreastFiF completed successfully.";
                 },
                 ex =>
                 {
@@ -534,12 +534,15 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 newLat = newPlan.AddFixedSequenceBeam(beamPara, originalLat.ControlPoints[0].CollimatorAngle, originalLat.ControlPoints[0].GantryAngle, originalLat.IsocenterPosition);
                 newLat.RemoveFlatteningSequence();
 
-                //seta as lps a posteriori
+                //seta as lps a posteriori - MED beam
                 var editables = newMed.GetEditableParameters();
+                editables.SetJawPositions(originalMed.ControlPoints[0].JawPositions);
                 editables.SetAllLeafPositions(originalMed.ControlPoints[0].LeafPositions);
                 newMed.ApplyParameters(editables);
 
+                //seta as lps a posteriori - LAT beam
                 editables = newLat.GetEditableParameters();
+                editables.SetJawPositions(originalLat.ControlPoints[0].JawPositions);
                 editables.SetAllLeafPositions(originalLat.ControlPoints[0].LeafPositions);
                 newLat.ApplyParameters(editables);
             }
@@ -589,6 +592,8 @@ namespace MAAS_BreastPlan_helper.ViewModels
                                $"MED Weight: {lowEnergyMedWeight:F3}, LAT Weight: {lowEnergyLatWeight:F3}";
             }
 
+
+
             Beam newMed15 = null;
             Beam newLat15 = null;
 
@@ -637,22 +642,22 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 {
                     // Skip high energy beams (they already have correct weights)
                     if (!ib.Id.Contains(SelectedHighEnergyMode))
-                    {
-                        med0 = ib;
-                        VMS.TPS.Common.Model.API.BeamParameters med0BeamParameter = med0.GetEditableParameters();
+                {
+                    med0 = ib;
+                    VMS.TPS.Common.Model.API.BeamParameters med0BeamParameter = med0.GetEditableParameters();
                         med0BeamParameter.WeightFactor = lowEnergyMedWeight;
-                        med0.ApplyParameters(med0BeamParameter);
+                    med0.ApplyParameters(med0BeamParameter);
                     }
                 }
                 else if (Regex.Match(ib.Id.ToLower(), "lat").Success)//Lat beam
                 {
                     // Skip high energy beams (they already have correct weights)
                     if (!ib.Id.Contains(SelectedHighEnergyMode))
-                    {
-                        lat0 = ib;
-                        VMS.TPS.Common.Model.API.BeamParameters lat0BeamParameter = lat0.GetEditableParameters();
+                {
+                    lat0 = ib;
+                    VMS.TPS.Common.Model.API.BeamParameters lat0BeamParameter = lat0.GetEditableParameters();
                         lat0BeamParameter.WeightFactor = lowEnergyLatWeight; // apply corrected low energy weight
-                        lat0.ApplyParameters(lat0BeamParameter);
+                    lat0.ApplyParameters(lat0BeamParameter);
                     }
                 }
             }
@@ -767,6 +772,12 @@ namespace MAAS_BreastPlan_helper.ViewModels
 
             //post process lateral field MLC from mirroring med due to field size difference
             bool isHal = machineID.ToLower().Contains("hal") || machineID.ToLower().Contains("rds");
+
+            // Add Halcyon-specific diagnostic information
+            if (isHal)
+            {
+                StatusMessage += $" | Halcyon Mode: Enhanced jaw/MLC positioning enabled";
+            }
 
             // Arrays de referência para os feixes
             float[][,] LPMedTot = { LPMed1, LPMed2, LPMed3, LPMed4, LPMed5 };
@@ -1515,49 +1526,77 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     if (isHal)
                     {
                         if (LPMed != null)
+                    {
+                        try
                         {
-                            try
-                            {
-                                //adiciona os campos do hal
-                                medBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleMed, gantryAngleMed, iso);
-                                medBeams[i].RemoveFlatteningSequence();
+                            //adiciona os campos do hal
+                            medBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleMed, gantryAngleMed, iso);
+                            medBeams[i].RemoveFlatteningSequence();
 
-                                //seta as lps a posteriori
-                                var editables = medBeams[i].GetEditableParameters();
-                                editables.WeightFactor = subFieldWeight;
-                                medBeams[i].ApplyParameters(editables);
+                            //seta as lps a posteriori
+                            var editables = medBeams[i].GetEditableParameters();
+                                
+                                // Set jaw positions for Halcyon (required for proper MLC operation)
+                                editables.SetJawPositions(jawsPositionMed);
+                                
+                                // Set leaf positions BEFORE setting weight
                                 editables.SetAllLeafPositions(LPMed[i]);
-                                medBeams[i].ApplyParameters(editables);
+                                
+                                // Set weight factor last
+                            editables.WeightFactor = subFieldWeight;
+                                
+                            medBeams[i].ApplyParameters(editables);
+
+                                // Set beam ID for identification
+                                medBeams[i].Id = $"3{i+2} MED";
+                        }
+                            catch (Exception ex)
+                            {
+                                // Provide error feedback instead of silent failure
+                                MessageBox.Show($"Error creating Halcyon MED subfield {i+1}: {ex.Message}");
                             }
-                            catch { }
                         }
                         if (LPLat != null)
                         {
-                            try
-                            {
-                                //adiciona os campos do hal
-                                latBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleLat, gantryAngleLat, iso);
-                                latBeams[i].RemoveFlatteningSequence();
+                        try
+                        {
+                            //adiciona os campos do hal
+                            latBeams[i] = newPlan.AddFixedSequenceBeam(beamPara, colAngleLat, gantryAngleLat, iso);
+                            latBeams[i].RemoveFlatteningSequence();
 
-                                //seta as lps a posteriori
-                                var editables = latBeams[i].GetEditableParameters();
-                                editables.WeightFactor = subFieldWeight * latCorrection;
-                                latBeams[i].ApplyParameters(editables);
+                            //seta as lps a posteriori
+                            var editables = latBeams[i].GetEditableParameters();
+                                
+                                // Set jaw positions for Halcyon (required for proper MLC operation)
+                                editables.SetJawPositions(jawsPositionLat);
+                                
+                                // Set leaf positions BEFORE setting weight
                                 editables.SetAllLeafPositions(LPLat[i]);
-                                latBeams[i].ApplyParameters(editables);
+                                
+                                // Set weight factor last
+                            editables.WeightFactor = subFieldWeight * latCorrection;
+                                
+                            latBeams[i].ApplyParameters(editables);
+
+                                // Set beam ID for identification
+                                latBeams[i].Id = $"4{i+2} LAT";
+                        }
+                            catch (Exception ex)
+                            {
+                                // Provide error feedback instead of silent failure
+                                MessageBox.Show($"Error creating Halcyon LAT subfield {i+1}: {ex.Message}");
                             }
-                            catch { }
                         }
                     }
                     else
                     {
                         if (LPMed != null)
-                        {
-                            medBeams[i] = newPlan.AddMLCBeam(beamPara, LPMed[i], jawsPositionMed, colAngleMed, gantryAngleMed, psaAngleMed, iso);
+                    {
+                        medBeams[i] = newPlan.AddMLCBeam(beamPara, LPMed[i], jawsPositionMed, colAngleMed, gantryAngleMed, psaAngleMed, iso);
 
-                            // Obter e ajustar parâmetros do feixe
-                            medBeamParams[i] = medBeams[i].GetEditableParameters();
-                            medBeamParams[i].WeightFactor = subFieldWeight;
+                        // Obter e ajustar parâmetros do feixe
+                        medBeamParams[i] = medBeams[i].GetEditableParameters();
+                        medBeamParams[i].WeightFactor = subFieldWeight;
 
                             // Aplicar parâmetros ajustados
                             medBeams[i].ApplyParameters(medBeamParams[i]);
@@ -1566,13 +1605,13 @@ namespace MAAS_BreastPlan_helper.ViewModels
                         {
                             latBeams[i] = newPlan.AddMLCBeam(beamPara, LPLat[i], jawsPositionLat, colAngleLat, gantryAngleLat, psaAngleLat, iso);
 
-                            latBeamParams[i] = latBeams[i].GetEditableParameters();
-                            latBeamParams[i].WeightFactor = subFieldWeight * latCorrection;
+                        latBeamParams[i] = latBeams[i].GetEditableParameters();
+                        latBeamParams[i].WeightFactor = subFieldWeight * latCorrection;
 
-                            latBeams[i].ApplyParameters(latBeamParams[i]);
-                        }
+                        latBeams[i].ApplyParameters(latBeamParams[i]);
                     }
                 }
+            }
             }
         }
 

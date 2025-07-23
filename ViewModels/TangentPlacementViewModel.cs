@@ -661,17 +661,45 @@ namespace MAAS_BreastPlan_helper.ViewModels
                     ExternalPlanSetup newPlan = context.Course.AddExternalPlanSetup(context.StructureSet);
                     newPlan.Id = newPlanId;
 
-                    // Copy some basic properties from the current plan
+                    // Copy prescription information from the current plan
                     try
                     {
-                        // Try to copy machine, energy settings from current plan
-                        // Use null-coalescing operator to handle nullable types
-                        int fractions = currentPlan.NumberOfFractions ?? 1;  // Default to 1 fraction if null
-                        newPlan.SetPrescription(fractions, currentPlan.DosePerFraction, 100.0);
+                        // Copy number of fractions, dose per fraction, and treatment percentage
+                        int fractions = (int)currentPlan.NumberOfFractions;
+                        DoseValue dosePerFraction = currentPlan.DosePerFraction;
+                        double treatmentPercentage = currentPlan.TreatmentPercentage;
+                        
+                        newPlan.SetPrescription(fractions, dosePerFraction, treatmentPercentage);
                     }
                     catch (Exception ex)
                     {
                         StatusMessage = $"Note: Could not copy prescription settings: {ex.Message}";
+                        StatusIsError = true;
+                    }
+
+                    // Copy dose calculation algorithms from the current plan
+                    try
+                    {
+                        // Copy photon volume dose calculation model
+                        newPlan.SetCalculationModel(CalculationType.PhotonVolumeDose, currentPlan.PhotonCalculationModel);
+                        
+                        // Copy photon optimization calculation model (if available)
+                        var optimizationModel = currentPlan.GetCalculationModel(CalculationType.PhotonIMRTOptimization);
+                        if (optimizationModel != null)
+                        {
+                            newPlan.SetCalculationModel(CalculationType.PhotonIMRTOptimization, optimizationModel);
+                        }
+                        
+                        // Copy photon leaf motion calculation model (if available)
+                        var leafMotionModel = currentPlan.GetCalculationModel(CalculationType.PhotonLeafMotions);
+                        if (leafMotionModel != null)
+                        {
+                            newPlan.SetCalculationModel(CalculationType.PhotonLeafMotions, leafMotionModel);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        StatusMessage = $"Note: Could not copy calculation models: {ex.Message}";
                         StatusIsError = true;
                     }
 
