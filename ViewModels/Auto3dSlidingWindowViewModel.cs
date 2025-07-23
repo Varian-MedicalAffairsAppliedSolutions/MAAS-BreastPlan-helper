@@ -233,13 +233,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
             Log.Debug("Checking two-field plan parameters");
 
             List<Beam> Beams = Plan.Beams.Where(b => !b.IsSetupField).ToList();
-            int nrBeams = Beams.Count();
-            //await UpdateListBox("Starting...");
-            if (nrBeams != 2)
-            {
-                bPrecheckPass = false;
-                message += $"Error: Must have 2 beams but got {nrBeams}\n";
-            }
 
             foreach (var bm in Beams)
             {
@@ -255,17 +248,6 @@ namespace MAAS_BreastPlan_helper.ViewModels
                 //    bPrecheckPass = false;
                 //     message += $"Error: MLC for beam {bm.Id} is null\n";
                 //}
-            }
-
-
-
-            // TODO: find better gantry diff function
-            // Check the beams are > 160 deg apart
-            var ganDiff = Math.Abs(Beams.First().ControlPoints.First().GantryAngle - Beams.Last().ControlPoints.First().GantryAngle);
-            if (ganDiff < 160)
-            {
-                bPrecheckPass = false;
-                message += "Error: Gantry angle difference is greater than 160 degrees\n";
             }
 
             var bAreSameEnergy = Beams.First().EnergyModeDisplayName == Beams.Last().EnergyModeDisplayName;
