@@ -25,21 +25,21 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Install .NET Framework 4.6.1 Developer Pack
+    - name: Install .NET Framework 4.7 Developer Pack
       run: |
-        Write-Host "Installing .NET Framework 4.6.1 Developer Pack via Chocolatey..."
-        choco install netfx-4.6.1-devpack -y --no-progress
-        Write-Host ".NET Framework 4.6.1 Developer Pack installed successfully"
+        Write-Host "Installing .NET Framework 4.7 Developer Pack via Chocolatey..."
+        choco install netfx-4.7-devpack -y --no-progress
+        Write-Host ".NET Framework 4.7 Developer Pack installed successfully"
       
     - name: Navigate to Workspace
       run: cd $GITHUB_WORKSPACE
       
-    - name: Update Target Framework Version to 4.6.1
+    - name: Update Target Framework Version to 4.7
       uses: Nambers/ReplaceStringInFile@v1.1
       with:
         path: .\${{env.PROJECT_NAME}}.csproj
         oldString: "TargetFrameworkVersion>v[\\d\\.]+<"
-        newString: 'TargetFrameworkVersion>v4.6.1<'
+        newString: 'TargetFrameworkVersion>v4.7<'
         
     - name: Update AssemblyInfo.cs
       id: update_assembly_info
