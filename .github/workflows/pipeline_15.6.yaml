@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       GITHUB_WORKSPACE_PACKAGES_PATH: packages\ESAPI.15.6.0\lib\net45\
       PROJECT_NAME: MAAS-BreastPlan-helper
@@ -21,12 +21,26 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Install .NET Framework 4.5 Targeting Pack
+      run: |
+        Write-Host "Installing .NET Framework 4.5 Developer Pack..."
+        $url = "https://download.microsoft.com/download/2/F/6/2F63CCD8-9288-4CC8-B58C-81D109F8F5A3/NDP452-KB2901907-x86-x64-AllOS-ENU.exe"
+        $output = "$env:TEMP\NDP452-KB2901907-x86-x64-AllOS-ENU.exe"
+        
+        # Download .NET Framework 4.5.2 (includes 4.5 targeting)
+        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+        
+        # Install silently
+        Start-Process -FilePath $output -ArgumentList "/quiet" -Wait -NoNewWindow
+        
+        Write-Host ".NET Framework 4.5 targeting components installed successfully"
 
     - name: Navigate to Workspace
       run: cd $GITHUB_WORKSPACE

@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       GITHUB_WORKSPACE_PACKAGES_PATH: packages\ESAPI.17.0.0\lib\net48\
       PROJECT_NAME: MAAS-BreastPlan-helper
@@ -24,12 +24,26 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Install .NET Framework 4.8 Developer Pack
+      run: |
+        Write-Host "Installing .NET Framework 4.8 Developer Pack..."
+        $url = "https://download.microsoft.com/download/7/4/0/740c7642-81a9-442e-acad-f4b2f18d4b60/ndp48-devpack-enu.exe"
+        $output = "$env:TEMP\ndp48-devpack-enu.exe"
+        
+        # Download .NET Framework 4.8 Developer Pack
+        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+        
+        # Install silently
+        Start-Process -FilePath $output -ArgumentList "/quiet" -Wait -NoNewWindow
+        
+        Write-Host ".NET Framework 4.8 Developer Pack installed successfully"
     
     - name: Navigate to Workspace
       run: cd $GITHUB_WORKSPACE
@@ -98,4 +112,4 @@ jobs:
           This is an official release of the **`${{ env.PROJECT_NAME }}`** project.
           Supported Eclipse version: `v17.0`.
           The generated dll is valid until `${{ github.event.inputs.dateInput }}`.
-        files: ${{ github.workspace }}/${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_FILE_NAME }}-EclipseV171.zip
+        files: ${{ github.workspace }}/${{env.PROJECT_NAME}}${{ steps.update_assembly_info.outputs.RELEASE_FILE_NAME }}-EclipseV170.zip
