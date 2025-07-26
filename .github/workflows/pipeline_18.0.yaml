@@ -9,11 +9,11 @@ on:
       dateInput:
         description: 'Expiration Date'
         required: true
-        default: '1/1/2024'
+        default: '1/1/2026'
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       GITHUB_WORKSPACE_PACKAGES_PATH: packages\ESAPI.18.0.0\lib\net48\
       PROJECT_NAME: MAAS-BreastPlan-helper
@@ -24,12 +24,18 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Install .NET Framework 4.8 Developer Pack
+      run: |
+        Write-Host "Installing .NET Framework 4.8 Developer Pack via Chocolatey..."
+        choco install netfx-4.8-devpack -y --no-progress
+        Write-Host ".NET Framework 4.8 Developer Pack installed successfully"
     
     - name: Navigate to Workspace
       run: cd $GITHUB_WORKSPACE

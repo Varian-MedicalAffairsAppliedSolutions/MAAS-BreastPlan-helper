@@ -130,7 +130,7 @@ namespace VMS.TPS
                 }
 
                 // Disclaimer message
-                string msg = $"The current ModulationComplexity application is provided AS IS as a non-clinical, research only tool in evaluation only. The current " +
+                string msg = $"The current BreastPlan-helper application is provided AS IS as a non-clinical, research only tool in evaluation only. The current " +
                              $"application will only be available until {exp.Date} after which the application will be unavailable. " +
                              "By Clicking 'Yes' you agree that this application will be evaluated and not utilized in providing planning decision support\n\n" +
                              $"Newer builds with future expiration dates can be found here: {GITHUB_URL}\n\n" +
