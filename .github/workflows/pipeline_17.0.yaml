@@ -33,16 +33,8 @@ jobs:
 
     - name: Install .NET Framework 4.8 Developer Pack
       run: |
-        Write-Host "Installing .NET Framework 4.8 Developer Pack..."
-        $url = "https://download.microsoft.com/download/7/4/0/740c7642-81a9-442e-acad-f4b2f18d4b60/ndp48-devpack-enu.exe"
-        $output = "$env:TEMP\ndp48-devpack-enu.exe"
-        
-        # Download .NET Framework 4.8 Developer Pack
-        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
-        
-        # Install silently
-        Start-Process -FilePath $output -ArgumentList "/quiet" -Wait -NoNewWindow
-        
+        Write-Host "Installing .NET Framework 4.8 Developer Pack via Chocolatey..."
+        choco install netfx-4.8-devpack -y --no-progress
         Write-Host ".NET Framework 4.8 Developer Pack installed successfully"
     
     - name: Navigate to Workspace

@@ -27,16 +27,8 @@ jobs:
 
     - name: Install .NET Framework 4.6.1 Developer Pack
       run: |
-        Write-Host "Installing .NET Framework 4.6.1 Developer Pack..."
-        $url = "https://download.microsoft.com/download/F/1/D/F1DEB8DB-D277-4EF9-9F48-3A2155D7755B/NDP461-DevPack-KB3105179-ENU.exe"
-        $output = "$env:TEMP\NDP461-DevPack-KB3105179-ENU.exe"
-        
-        # Download .NET Framework 4.6.1 Developer Pack
-        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
-        
-        # Install silently
-        Start-Process -FilePath $output -ArgumentList "/quiet" -Wait -NoNewWindow
-        
+        Write-Host "Installing .NET Framework 4.6.1 Developer Pack via Chocolatey..."
+        choco install netfx-4.6.1-devpack -y --no-progress
         Write-Host ".NET Framework 4.6.1 Developer Pack installed successfully"
       
     - name: Navigate to Workspace
